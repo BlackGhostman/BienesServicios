@@ -1,0 +1,107 @@
+﻿@inherits LayoutComponentBase
+@using AppBS.Shared.services
+
+<div class="page">
+    <!-- Barra lateral con el menú de navegación -->
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <!-- Barra superior con título, correo y botón de desconexión -->
+        <div class="top-row">
+            <!-- Título del sistema alineado a la izquierda -->
+            <h3 class="title">Sistema de Bienes y Servicios</h3>
+
+            <!-- Contenedor del correo y botón de desconexión alineado a la derecha -->
+            <div class="top-row-right">
+                <!-- Mostrar correo y botón solo si el usuario está autenticado -->
+                @if (UserStateService.UsuarioAutenticado != null)
+                {
+                    <span class="email-highlight">
+                        @UserStateService.UsuarioAutenticado.Correo
+                    </span>
+                    <button class="btn-disconnect"
+                            @onclick="HandleLogout"
+                            style="@(IsButtonVisible ? "" : "display:none;")"
+                            disabled="@IsButtonDisabled">
+                        Desconectar
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- Contenido principal de la página -->
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<!-- Sección de manejo de errores de Blazor -->
+<div id="blazor-error-ui">
+    <!-- Mensaje de error genérico -->
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    [Inject] UserStateService UserStateService { get; set; }
+    [Inject] NavigationManager NavigationManager { get; set; }
+
+    // Propiedad calculada: Mostrar el botón solo si hay un usuario autenticado y el rol no es 0
+    private bool IsButtonVisible => UserStateService.UsuarioAutenticado != null && UserStateService.UsuarioAutenticado.Rol != 0;
+
+    // Propiedad para controlar si el botón está deshabilitado durante la desconexión
+    private bool IsButtonDisabled { get; set; } = false;
+
+    /// <summary>
+    /// Método de inicialización del componente.
+    /// Se suscribe al evento para detectar cambios en el estado de autenticación.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        // Suscribir al evento para actualizar el estado de la UI cuando cambie la autenticación
+        UserStateService.OnChange += StateHasChanged;
+    }
+
+    /// <summary>
+    /// Método para manejar la desconexión del usuario.
+    /// </summary>
+    private async Task HandleLogout()
+    {
+        // Desactivar el botón mientras se procesa la desconexión
+        IsButtonDisabled = true;
+
+        // Verificar que hay un usuario autenticado antes de proceder
+        if (UserStateService.UsuarioAutenticado != null)
+        {
+            // Limpiar el usuario autenticado
+            UserStateService.SetUsuario(null);
+
+            // Simular tiempo de desconexión (opcional)
+            await Task.Delay(1000);
+
+            // Redirigir al inicio después de la desconexión
+            NavigationManager.NavigateTo("/", forceLoad: true);
+        }
+
+        // Habilitar el botón nuevamente
+        IsButtonDisabled = false;
+    }
+
+    /// <summary>
+    /// Método para limpiar recursos al destruir el componente.
+    /// Se desuscribe del evento OnChange.
+    /// </summary>
+    public void Dispose()
+    {
+        // Verificar y desuscribirse del evento OnChange para evitar errores
+        if (UserStateService != null)
+        {
+            UserStateService.OnChange -= StateHasChanged;
+        }
+    }
+}
+

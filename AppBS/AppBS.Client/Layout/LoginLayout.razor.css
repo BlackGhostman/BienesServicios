@@ -1,0 +1,10 @@
+﻿/* AppBS/AppBS.Client/Layout/LoginLayout.razor.css */
+
+.login-layout-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1rem;
+    background-color: #f8f9fa; /* Esto es el color 'bg-light' */
+}

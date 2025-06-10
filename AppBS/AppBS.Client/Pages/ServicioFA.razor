@@ -1,0 +1,39 @@
+﻿@page "/servicioFA"
+@inject HttpClient Http
+@using AppBS.Shared
+
+<h3>Unidades Administrativas</h3>
+
+@if (dependencias == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else
+{
+    <select>
+        @foreach (var unidad in dependencias)
+        {
+            <option>@unidad.Ucod @unidad.Udes</option>
+        }
+    </select>
+}
+
+@code {
+    private List<Unidad>? dependencias;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Llamamos al controlador de la API que a su vez consulta el servicio web
+            dependencias = await Http.GetFromJsonAsync<List<Unidad>>("api/finanzas/unidades");
+        }
+        catch (Exception ex)
+        {
+            // Manejo de errores si no se puede cargar la lista
+            Console.Error.WriteLine($"Error al cargar las dependencias: {ex.Message}");
+            dependencias = new List<Unidad>(); // Opcional: inicializamos con lista vacía
+        }
+    }
+}
+

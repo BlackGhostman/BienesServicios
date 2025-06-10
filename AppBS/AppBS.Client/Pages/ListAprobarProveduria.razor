@@ -1,0 +1,167 @@
+﻿@page "/listaprobarproveduria"
+@inject IJSRuntime JS
+@using AppBS.Shared.DTO
+@using AppBS.Shared
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+
+    <!-- Título antes de los filtros -->
+    <h3 class="text-center mb-4">Lista de Bienes y Servicios - Pre Aprobadas</h3>
+
+    <!-- Tarjeta con los filtros -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <i class="bi bi-search"></i> Búsqueda de Bienes y Servicios
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-5">
+                    <label for="fechaInicio" class="form-label">Fecha Inicio</label>
+                    <input type="date" id="fechaInicio" class="form-control" @bind="fechaInicio" />
+                </div>
+                <div class="col-md-5">
+                    <label for="fechaFin" class="form-label">Fecha Fin</label>
+                    <input type="date" id="fechaFin" class="form-control" @bind="fechaFin" />
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" >
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <br />
+    <br />
+
+    <div class="table-responsive">
+        <table id="BSTable" class="table table-striped table-hover align-middle table-bordered shadow-sm">
+
+                <thead class="table-secondary text-center">
+                    <tr>
+                    <th>Número Consecutivo</th>
+                    <th>Fecha Emisión</th>
+                    <th>Dependencia</th>
+                    <th>Descripción</th>
+                    <th>Estimación Total</th>
+                    <th>Presupuesto Disponible</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (listaSolicitudes.Any())
+                {
+                    @foreach (var solicitud in listaSolicitudes)
+                    {
+                        <tr>
+                            <td>@solicitud.NumeroConsecutivo</td>
+                            <td>@solicitud.FechaEmision.ToString("dd/MM/yyyy")</td>
+                            <td>@solicitud.NomDependencia</td>
+                            <td>@solicitud.DescripcionRequerimiento</td>
+                            <td>₡@solicitud.EstimacionTotal.ToString("N0", new System.Globalization.CultureInfo("es-CR"))</td>
+                            <td>₡@solicitud.PresupuestoDisponible.ToString("N0", new System.Globalization.CultureInfo("es-CR"))</td>
+                            <td>
+                                <button class="btn btn-info" @onclick="() => VerDetalle(solicitud.NumeroConsecutivo)" data-bs-toggle="tooltip" title="Aprobar o Rechazar">
+                                    <i class="bi bi-eye"></i> Revisar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private DateTime fechaInicio = DateTime.Today.AddDays(-30);
+    private DateTime fechaFin = DateTime.Today;
+    private List<SolicitudBienServicio> listaSolicitudes = new();
+
+
+    private async Task ObtenerBienServicioPorEstado(int estado)
+    {
+        try
+        {
+            var response = await Http.GetAsync($"api/solicitudbienservicio/obtener-bien-servicio-estado/{estado}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                listaSolicitudes = await response.Content.ReadFromJsonAsync<List<SolicitudBienServicio>>();
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                var mensajeError = await response.Content.ReadAsStringAsync();
+                MostrarNotificacion(mensajeError);
+            }
+            else
+            {
+                MostrarNotificacion("Ocurrió un error al obtener los datos de la Bienes y Servicios.");
+            }
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion("Error inesperado al obtener los datos de la Bienes y Servicios.");
+        }
+    }
+
+    private void VerDetalle(int idSolicitud)
+    {
+        try
+        {
+            Navigation.NavigateTo($"/aproproveduriasolicitudbienesservicios/{idSolicitud.ToString()}");
+        }
+        catch (Exception ex)
+        {
+            // En caso de error, mostrar un mensaje de notificación o manejar el error de alguna manera
+            MostrarNotificacion($"Error al redirigir a la página de detalles: {ex.Message}");
+        }
+    }
+
+
+    private void MostrarNotificacion(string mensaje)
+    {
+        JS.InvokeVoidAsync("eval", $@"
+            var toastElement = document.getElementById('successToast');
+            toastElement.querySelector('.toast-body').innerText = '{mensaje}';
+            var toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        ");
+    }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        try
+        {
+
+            // Vuelve a inicializar DataTables
+
+            // Llamamos al controlador de la API que a su vez consulta el servicio web
+            await ObtenerBienServicioPorEstado((int)EnumExtensions.EstadoSolicitud.PreAprobadoProveeduria);
+
+            await JS.InvokeVoidAsync("initializeDataTable", "BSTable");
+
+        
+            // Vuelve a inicializar DataTables
+            //await JS.InvokeVoidAsync("initializeDataTable", "serviciosTable");
+          
+        }
+        catch (Exception ex)
+        {
+            // Manejo de errores si no se puede cargar la lista
+            MostrarNotificacion($"Error de carga de datos, contacte al Administrador de Sistema: {ex.Message}");
+            //dependencias = new List<Unidad>(); // Opcional: inicializamos con lista vacía
+        }
+    }
+
+
+
+
+}

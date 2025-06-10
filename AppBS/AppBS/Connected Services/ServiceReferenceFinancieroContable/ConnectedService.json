@@ -1,0 +1,43 @@
+{
+  "ExtendedData": {
+    "inputs": [
+      "https://wsconsultasistemasfinancieros.curridabat.go.cr/ws.asmx"
+    ],
+    "collectionTypes": [
+      "System.Collections.Generic.Dictionary`2",
+      "System.Collections.Generic.List`1"
+    ],
+    "namespaceMappings": [
+      "*, ServiceReferenceFinancieroContable"
+    ],
+    "references": [
+      "D:\\BD\\AppBS\\AppBS\\AppBS\\bin\\Debug\\net8.0\\AppBS.Client.dll",
+      "Microsoft.AspNetCore.Authorization, {Microsoft.AspNetCore.Authorization, 8.0.10}",
+      "Microsoft.AspNetCore.Components, {Microsoft.AspNetCore.Components, 8.0.10}",
+      "Microsoft.AspNetCore.Components.Forms, {Microsoft.AspNetCore.Components.Forms, 8.0.10}",
+      "Microsoft.AspNetCore.Components.Web, {Microsoft.AspNetCore.Components.Web, 8.0.10}",
+      "Microsoft.AspNetCore.Components.WebAssembly, {Microsoft.AspNetCore.Components.WebAssembly, 8.0.10}",
+      "Microsoft.AspNetCore.Components.WebAssembly.Server, {Microsoft.AspNetCore.Components.WebAssembly.Server, 8.0.10}",
+      "Microsoft.AspNetCore.Metadata, {Microsoft.AspNetCore.Metadata, 8.0.10}",
+      "Microsoft.Extensions.Configuration, {Microsoft.Extensions.Configuration, 8.0.0}",
+      "Microsoft.Extensions.Configuration.Abstractions, {Microsoft.Extensions.Configuration.Abstractions, 8.0.0}",
+      "Microsoft.Extensions.Configuration.Binder, {Microsoft.Extensions.Configuration.Binder, 8.0.2}",
+      "Microsoft.Extensions.Configuration.FileExtensions, {Microsoft.Extensions.Configuration.FileExtensions, 8.0.1}",
+      "Microsoft.Extensions.Configuration.Json, {Microsoft.Extensions.Configuration.Json, 8.0.1}",
+      "Microsoft.Extensions.DependencyInjection, {Microsoft.Extensions.DependencyInjection, 8.0.1}",
+      "Microsoft.Extensions.DependencyInjection.Abstractions, {Microsoft.Extensions.DependencyInjection.Abstractions, 8.0.2}",
+      "Microsoft.Extensions.FileProviders.Abstractions, {Microsoft.Extensions.FileProviders.Abstractions, 8.0.0}",
+      "Microsoft.Extensions.FileProviders.Physical, {Microsoft.Extensions.FileProviders.Physical, 8.0.0}",
+      "Microsoft.Extensions.FileSystemGlobbing, {Microsoft.Extensions.FileSystemGlobbing, 8.0.0}",
+      "Microsoft.Extensions.Logging, {Microsoft.Extensions.Logging, 8.0.1}",
+      "Microsoft.Extensions.Logging.Abstractions, {Microsoft.Extensions.Logging.Abstractions, 8.0.2}",
+      "Microsoft.Extensions.Options, {Microsoft.Extensions.Options, 8.0.2}",
+      "Microsoft.Extensions.Primitives, {Microsoft.Extensions.Primitives, 8.0.0}",
+      "Microsoft.JSInterop, {Microsoft.JSInterop, 8.0.10}",
+      "Microsoft.JSInterop.WebAssembly, {Microsoft.JSInterop.WebAssembly, 8.0.10}",
+      "System.IO.Pipelines, {System.IO.Pipelines, 8.0.0}"
+    ],
+    "targetFramework": "net8.0",
+    "typeReuseMode": "All"
+  }
+}

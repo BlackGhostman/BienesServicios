@@ -1,0 +1,55 @@
+﻿/* AppBS/AppBS.Client/Pages/Login.razor.css */
+body {
+    /* O el contenedor principal de tu formulario */
+    display: flex;
+    justify-content: center; /* Centra horizontalmente */
+    align-items: center; /* Centra verticalmente */
+    min-height: 100vh; /* Asegura que el contenedor ocupe toda la altura de la pantalla */
+    margin: 0; /* Remueve márgenes por defecto */
+    background-color: #f0f2f5; /* Un color de fondo similar al de la captura sería opcional */
+}
+.login-container-bs {
+    max-width: 26rem;
+    width: 100%;
+}
+
+.btn-custom-orange {
+    background-color: #F97316;
+    border-color: #F97316;
+    color: white;
+}
+
+    .btn-custom-orange:hover {
+        background-color: #EA580C;
+        border-color: #EA580C;
+    }
+
+.link-custom-orange {
+    color: #F97316;
+    text-decoration: none;
+}
+
+    .link-custom-orange:hover {
+        color: #EA580C;
+    }
+
+/* Estilos para los inputs con íconos */
+.input-group-text {
+    background-color: #e9ecef;
+    border-right: none;
+}
+
+.input-group > .form-control {
+    border-left: none;
+}
+
+    .input-group > .form-control:focus {
+        border-color: #fdba74;
+        box-shadow: 0 0 0 0.25rem rgba(249, 115, 22, 0.25);
+        position: relative;
+        z-index: 3;
+    }
+
+.input-group:focus-within .input-group-text {
+    border-color: #fdba74;
+}

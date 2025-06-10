@@ -1,0 +1,133 @@
+﻿@page "/solicitudBS"
+@using Microsoft.AspNetCore.Components
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Solicitud de Bienes y Servicios</title>
+    
+</head>
+<body>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-md-8">
+                <h2>Solicitud de Bienes y Servicios</h2>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-primary">Adjuntos</button>
+            </div>
+        </div>
+
+        <!-- Campos de la parte superior -->
+        <div class="container mt-3">
+            <div class="row align-items-center">
+                <!-- Departamento Solicitante -->
+                <div class="col-md-8">
+                    <input type="text" class="form-control bg-secondary text-white fw-bold" value="Departamento Solicitante" readonly>
+                </div>
+
+                <!-- Ficha N° con lupa -->
+                <div class="col-md-4 d-flex align-items-end">
+                    <label class="fw-bold me-2">Ficha N°</label>
+                    <input type="text" class="form-control w-25" id="fichaNumero">
+                    <button class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#buscarFichaModal">
+                        🔍
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campos de Fecha y Bienes y Servicios -->
+        <div class="row mt-3">
+            <div class="col-md-3">
+                <label for="xfecha" class="form-label">Fecha</label>
+                <input type="date" id="xfecha" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label for="bienesservicios" class="form-label">N° Bienes y Servicio</label>
+                <input type="text" id="bienesservicios" class="form-control" readonly value="@Bs">
+            </div>
+        </div>
+
+        <!-- Tabla de Productos -->
+        <table class="table table-striped mt-4">
+            <thead>
+                <tr>
+                    <th>Cantidad</th>
+                    <th>Descripción</th>
+                    <th>Costo Estimado</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>1</td><td>Producto A</td><td>₡10,000</td></tr>
+                <tr><td>2</td><td>Producto B</td><td>₡20,000</td></tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td></td>
+                    <td class="fw-bold">Total</td>
+                    <td>₡30,000</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Firmas de Aprobación -->
+    <div class="container mt-4">
+        <h3>Firmas de aprobación:</h3>
+        <div class="row text-center">
+            <div class="col-md-4">
+                <div class="border p-3">
+                    <button class="btn btn-primary">Firma Solicitante</button>
+                    <hr style="border: 2px solid orange; width: 80%; margin: auto;">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border p-3">
+                    <p class="fw-bold">Jefatura Presupuesto</p>
+                    <hr style="border: 2px solid orange; width: 80%; margin: auto;">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border p-3">
+                    <p class="fw-bold">Director Financiero</p>
+                    <hr style="border: 2px solid orange; width: 80%; margin: auto;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para la Búsqueda de Fichas -->
+    <div class="modal fade" id="buscarFichaModal" tabindex="-1" aria-labelledby="buscarFichaModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="buscarFichaModalLabel">Buscar Ficha</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control" id="buscarFicha" placeholder="Ingrese número de ficha">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" onclick="buscarFicha()">Buscar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function buscarFicha() {
+            let fichaNumero = document.getElementById("buscarFicha").value;
+            document.getElementById("fichaNumero").value = fichaNumero;
+        }
+    </script>
+
+</body>
+</html>
+
+@code {
+    private string Bs = "#";
+}

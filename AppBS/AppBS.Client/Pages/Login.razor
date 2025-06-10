@@ -1,0 +1,121 @@
+﻿@page "/"
+@layout LoginLayout
+@inject HttpClient Http
+@using AppBS.Client.Layout
+@using AppBS.Shared
+@using AppBS.Shared.services
+
+
+<div class="login-container-bs card shadow-lg rounded-4 p-4 p-md-5 text-center">
+
+    <img src="https://www.curridabat.go.cr/wp-content/uploads/2025/04/banner1.png"
+         alt="Banner Municipalidad"
+         class="img-fluid mb-4 rounded"
+         onerror="this.onerror=null; this.src='https://placehold.co/300x80/eeeeee/cccccc?text=Banner+Muni'; this.alt='Placeholder Banner';" />
+
+    <h2 class="h3 mb-4 fw-semibold text-secondary">Iniciar Sesión</h2>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center mb-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+
+    <EditForm Model="usuario" OnValidSubmit="HandleLogin" FormName="loginForm" hidden="@isLoading">
+        <DataAnnotationsValidator />
+
+        <div class="mb-3 text-start">
+            <label for="correo" class="form-label small fw-medium text-secondary">USUARIO</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user text-secondary"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                </span>
+                <InputText id="correo" class="form-control py-2" @bind-Value="usuario.Correo" placeholder="Ingrese su usuario" />
+            </div>
+            <ValidationMessage For="() => usuario.Correo" class="text-danger small" />
+        </div>
+
+        <div class="mb-4 text-start">
+            <label for="clave" class="form-label small fw-medium text-secondary">CLAVE</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lock text-secondary"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                </span>
+                <InputText id="clave" class="form-control py-2" @bind-Value="usuario.Clave" type="password" placeholder="Ingrese su clave" />
+            </div>
+            <ValidationMessage For="() => usuario.Clave" class="text-danger small" />
+        </div>
+
+        <button type="submit" class="btn btn-custom-orange w-100 fw-semibold py-2 shadow" disabled="@isLoading">INGRESAR</button>
+    </EditForm>
+
+    @if (!string.IsNullOrEmpty(mensaje))
+    {
+        <div class="alert @mensajeClase mt-3">@mensaje</div>
+    }
+
+    <div class="mt-4 text-center">
+        <a href="#" class="link-custom-orange small">¿Olvidó su contraseña?</a>
+    </div>
+
+</div>
+
+@code {
+    [Inject] UserStateService UserStateService { get; set; }
+    [Inject] NavigationManager NavigationManager { get; set; }
+
+    private UsuarioLogin usuario = new UsuarioLogin();
+    private string mensaje = string.Empty;
+    private string mensajeClase = string.Empty;
+    private bool recordarUsuario = false;
+    private bool isLoading = false; // Control de carga
+
+    private bool IsFormDisabled => isLoading; // Deshabilitar formulario durante la carga
+
+    private async Task HandleLogin()
+    {
+        isLoading = true; // Mostrar spinner
+        mensaje = string.Empty; // Limpiar mensaje
+
+        try
+        {
+            var loginRequest = new { Email = usuario.Correo, Password = usuario.Clave };
+
+            var response = await Http.PostAsJsonAsync("api/usuario/login", loginRequest);
+            if (response.IsSuccessStatusCode)
+            {
+                var respuesta = await response.Content.ReadFromJsonAsync<RespuestaLogin>();
+                mensaje = respuesta?.Mensaje ?? "Inicio de sesión exitoso.";
+
+                if (respuesta?.Usuario != null)
+                {
+                    //  UserStateService.Login(respuesta.Usuario);
+                   UserStateService.SetUsuario(respuesta.Usuario); // Actualiza usuario autenticado
+
+                    mensajeClase = "alert-success";
+                    NavigationManager.NavigateTo("/home");
+                }
+
+               
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<RespuestaLogin>();
+                mensaje = error?.Mensaje ?? "Ocurrió un error inesperado.";
+                mensajeClase = "alert-danger";
+            }
+        }
+        catch (Exception ms)
+        {
+            mensaje = "Ocurrió un error al intentar iniciar sesión." + ms.Message;
+            mensajeClase = "alert-danger";
+        }
+        finally
+        {
+            isLoading = false; // Ocultar spinner
+        }
+    }
+}

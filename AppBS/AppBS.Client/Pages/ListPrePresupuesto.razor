@@ -1,0 +1,311 @@
+﻿@page "/listprepresupuesto"
+@inject IJSRuntime JS
+@using AppBS.Shared.DTO
+@using AppBS.Shared
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+
+
+     <!-- Título antes de los filtros -->
+    <h3 class="text-center mb-4">Lista de Bienes y Servicios - Pendientes</h3>
+
+    <!-- Tarjeta con los filtros -->
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <i class="bi bi-search"></i> Búsqueda de Bienes y Servicios
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-5">
+                    <label for="fechaInicio" class="form-label">Fecha Inicio</label>
+                    <input type="date" id="fechaInicio" class="form-control" @bind="fechaInicio" />
+                </div>
+                <div class="col-md-5">
+                    <label for="fechaFin" class="form-label">Fecha Fin</label>
+                    <input type="date" id="fechaFin" class="form-control" @bind="fechaFin" />
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" >
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <br />
+    <br />
+
+    <div class="table-responsive">
+        <table id="BSTable" class="table table-striped table-hover align-middle table-bordered shadow-sm">
+
+                <thead class="table-secondary text-center">
+                    <tr>
+                    <th>Número Consecutivo</th>
+                    <th>Fecha Emisión</th>
+                    <th>Dependencia</th>
+                    <th>Descripción</th>
+                    <th>Estimación Total</th>
+                    <th>Presupuesto Disponible</th>
+                    <th>Estado BS</th>
+
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (listaSolicitudes.Any())
+                {
+                    @foreach (var solicitud in listaSolicitudes)
+                    {
+                        <tr>
+                            <td>@solicitud.NumeroConsecutivo</td>
+                            <td>@solicitud.FechaEmision.ToString("dd/MM/yyyy")</td>
+                            <td>@solicitud.NomDependencia</td>
+                            <td>@solicitud.DescripcionRequerimiento</td>
+                            <td>₡@solicitud.EstimacionTotal.ToString("N0", new System.Globalization.CultureInfo("es-CR"))</td>
+                            <td>₡@solicitud.PresupuestoDisponible.ToString("N0", new System.Globalization.CultureInfo("es-CR"))</td>
+                            <td>
+                                @if (EsEstadoRechazado(solicitud.Estado))
+                                {
+                                    <a href="#" @onclick="() => AbrirTrazabilidadModal(solicitud.Id,solicitud.NumeroConsecutivo, solicitud.Estado)" data-bs-toggle="modal" data-bs-target="#trazabilidadModal">
+                                        @EnumExtensions.GetDescription((EnumExtensions.EstadoSolicitud)solicitud.Estado)
+                                    </a>
+                                }
+                                else
+                                {
+                                    @EnumExtensions.GetDescription((EnumExtensions.EstadoSolicitud)solicitud.Estado)
+                                }
+                            </td>
+
+                            <td>
+                                <button class="btn btn-info" @onclick="() => VerDetalle(solicitud.NumeroConsecutivo)" data-bs-toggle="tooltip" title="Aprobar o Rechazar">
+                                    <i class="bi bi-eye"></i> Revisar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+<!-- Modal -->
+<div class="modal fade" id="trazabilidadModal" tabindex="-1" aria-labelledby="trazabilidadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content shadow">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="trazabilidadModalLabel">
+                    Trazabilidad de Bienes y Servicio @numeroConsecutivoSeleccionado
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-secondary text-center">
+                            <tr>
+                                <th>Observaciones</th>
+                                <th>Fecha Registro</th>
+                                <th>Departamento</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in trazabilidadSimulada)
+                            {
+                                <tr>
+                                    <td>@item.Observacion</td>
+                                    <td>@item.Fecha.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                    <td>@item.Departamento</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-outline-primary btn-sm" @onclick="@(() => VerDetalle(numeroConsecutivoSeleccionado))" title="Revisar Bienes y Servicios">
+                                            <i class="bi bi-search"></i> Revisar BS
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+@code {
+    private DateTime fechaInicio = DateTime.Today.AddDays(-30);
+    private DateTime fechaFin = DateTime.Today;
+    private List<SolicitudBienServicio> listaSolicitudes = new();
+
+   
+
+    private async Task ObtenerBienServicioPorEstados(List<int> estados)
+{
+    try
+    {
+        if (estados == null || !estados.Any())
+        {
+            MostrarNotificacion("Debe proporcionar al menos un estado.");
+            return;
+        }
+
+        var queryString = string.Join("&", estados.Select(e => $"estados={e}"));
+        var response = await Http.GetAsync($"api/solicitudbienservicio/obtener-bien-servicio-Lista-estado?{queryString}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            listaSolicitudes = await response.Content.ReadFromJsonAsync<List<SolicitudBienServicio>>();
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            var mensajeError = await response.Content.ReadAsStringAsync();
+            MostrarNotificacion(mensajeError);
+        }
+        else
+        {
+            MostrarNotificacion("Ocurrió un error al obtener los datos del BienServicio.");
+        }
+    }
+    catch (Exception ex)
+    {
+        MostrarNotificacion("Error inesperado al obtener los datos del BienServicio.");
+    }
+}
+
+
+
+    private async Task VerDetalle(int idSolicitud)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("eval", @"
+    if ($('#trazabilidadModal').hasClass('show')) {
+        $('#trazabilidadModal').modal('hide');
+    }
+");
+
+            Navigation.NavigateTo($"/presolicitudbienesservicios/{idSolicitud.ToString()}");
+        }
+        catch (Exception ex)
+        {
+            // En caso de error, mostrar un mensaje de notificación o manejar el error de alguna manera
+            MostrarNotificacion($"Error al redirigir a la página de detalles: {ex.Message}");
+        }
+    }
+
+
+    private void MostrarNotificacion(string mensaje)
+    {
+        JS.InvokeVoidAsync("eval", $@"
+            var toastElement = document.getElementById('successToast');
+            toastElement.querySelector('.toast-body').innerText = '{mensaje}';
+            var toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        ");
+    }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Lista de estados que queremos consultar
+            var estados = new List<int>
+        {
+            (int)EnumExtensions.EstadoSolicitud.SolicitudFirmada,
+            (int)EnumExtensions.EstadoSolicitud.RechazadaPresupuesto,
+            (int)EnumExtensions.EstadoSolicitud.RechazadaFinanciero,
+            (int)EnumExtensions.EstadoSolicitud.RechazadaAlcaldia,
+        };
+
+            // Llamamos al método que consume el servicio con la lista de estados
+            await ObtenerBienServicioPorEstados(estados);
+
+            // Inicializar DataTable después de cargar datos
+            await JS.InvokeVoidAsync("initializeDataTable", "BSTable");
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion($"Error de carga de datos, contacte al Administrador de Sistema: {ex.Message}");
+        }
+    }
+
+
+
+
+
+    private int numeroConsecutivoSeleccionado;
+
+
+    private List<Trazabilidad> trazabilidadSimulada = new();
+
+
+    private async Task AbrirTrazabilidadModal(int id ,int numeroConsecutivo, int estado)
+    {
+        numeroConsecutivoSeleccionado = numeroConsecutivo;
+
+        try
+        {
+            // Llamada al servicio para obtener el último rechazo
+            var response = await Http.GetAsync($"api/ControlAprobaciones/ultimo-rechazo?idSolicitudBS={id}&estado={(int)estado}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var ultimoRechazo = await response.Content.ReadFromJsonAsync<ControlAprobaciones>();
+
+                if (ultimoRechazo != null)
+                {
+                    // Simulación de datos de trazabilidad usando la respuesta del servicio
+                    trazabilidadSimulada = new List<Trazabilidad>
+                {
+                    new Trazabilidad { Observacion = ultimoRechazo.Observaciones, Fecha = ultimoRechazo.FechaRegistro, Departamento = "Presupuesto" },
+                };
+                }
+                else
+                {
+                    MostrarNotificacion("No se encontró ningún rechazo registrado.");
+                }
+            }
+            else
+            {
+                MostrarNotificacion("Error al obtener el último rechazo.");
+            }
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion($"Error inesperado: {ex.Message}");
+        }
+    }
+
+
+    private bool EsEstadoRechazado(int estado)
+    {
+        var estadosRechazados = new[]
+        {
+            (int)EnumExtensions.EstadoSolicitud.SolicitudFirmada,
+           // (int)EnumExtensions.EstadoSolicitud.RechazadaFinanciero,
+            
+        };
+
+        return estadosRechazados.Contains(estado);
+    }
+
+
+
+}

@@ -1,0 +1,92 @@
+﻿@page "/servicio"
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<h3>Catálogo de Productos SICOP</h3>
+
+@if (cargando)
+{
+    <p>Cargando productos...</p>
+}
+else if (productos.Count == 0)
+{
+    <p>No hay productos disponibles.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Fecha Registro</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var producto in productos)
+            {
+                <tr>
+                    <td>@producto.Code_id</td>
+                    <td>@producto.Code_type</td>
+                    <td>@producto.From_date?.ToString("dd/MM/yyyy")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+@code {
+    private List<CataProductRequest> productos = new();
+    private bool cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+
+            productos = await Http.GetFromJsonAsync<List<CataProductRequest>>("api/catalogo/productos");
+        /*    var request = new CataProductRequest
+                    {
+                        Code_id = "tu_codigo", // Reemplaza con el código que desees
+                        Code_type = "tu_tipo", // Reemplaza con el tipo que desees
+                        From_date = DateTime.Now.AddDays(-30), // Fecha de inicio
+                        To_date = DateTime.Now // Fecha de fin
+                    };*/
+
+           // productos = await Http.PostAsJsonAsyncc<CataProductRequest>("api/catalogo/obtener-productos", request);
+          
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion($"Error al obtener productos: {ex.Message}");
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    
+
+    private void MostrarNotificacion(string mensaje)
+    {
+        // Mostrar la notificación usando Bootstrap
+        JS.InvokeVoidAsync("eval", $@"
+            var toastElement = document.getElementById('successToast');
+            toastElement.querySelector('.toast-body').innerText = '{mensaje}';
+            var toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        ");
+    }
+
+
+    private class CataProductRequest
+    {
+        public string Code_id { get; set; }
+        public string Code_type { get; set; }
+        public DateTime? From_date { get; set; }
+        public DateTime? To_date { get; set; }
+    }
+}
+

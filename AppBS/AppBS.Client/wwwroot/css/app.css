@@ -1,0 +1,174 @@
+@import url('app.css');
+
+/* Animación de cambio de color para títulos dinámicos */
+@keyframes color-change {
+    0% {
+        color: red;
+    }
+
+    25% {
+        color: green;
+    }
+
+    50% {
+        color: blue;
+    }
+
+    75% {
+        color: purple;
+    }
+
+    100% {
+        color: orange;
+    }
+}
+
+.dynamic-heading {
+    animation: color-change 5s infinite; /* Cambia de color cada 5 segundos */
+}
+
+
+
+.select-metas {
+    min-width: 250px; /* Ajusta el ancho mínimo según lo necesario */
+    width: auto; /* Permite que el ancho se ajuste automáticamente */
+    max-width: 100%; /* Evita que crezca más allá del contenedor */
+    white-space: nowrap; /* Evita saltos de línea */
+}
+
+/******************************************************/
+
+/******************************************************/
+/* Contenedor principal de la barra superior */
+.top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+    flex-wrap: wrap;
+}
+
+/* Título del sistema alineado a la izquierda */
+.title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #F7941E; /* Naranja institucional */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+    flex-grow: 1;
+    max-width: 50%;
+}
+
+/* Estilo para el texto del correo */
+.email-highlight {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ff8c00;
+    max-width: 70%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 10px;
+    transition: color 0.3s ease-in-out;
+}
+
+/* Estilo para el botón de desconexión */
+.btn-disconnect {
+    background-color: #0033A0;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease-in-out;
+}
+
+    .btn-disconnect:hover {
+        background-color: #002080;
+    }
+
+/* Diseño responsivo */
+@media (max-width: 768px) {
+    .top-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .title {
+        font-size: 1.5rem;
+        max-width: 100%;
+    }
+
+    .email-highlight {
+        font-size: 0.9rem;
+        max-width: 100%;
+        white-space: normal;
+    }
+
+    .btn-disconnect {
+        margin-top: 10px;
+    }
+}
+
+@media (min-width: 769px) {
+    .email-highlight {
+        font-size: 1rem;
+        white-space: nowrap;
+    }
+
+    .top-row {
+        flex-direction: row;
+    }
+}
+/************************************************************/
+
+.producto-row:hover {
+    background-color: #f1f1f1 !important;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.modal-content {
+    border-radius: 10px;
+}
+
+/* Resaltado del input de búsqueda */
+.search-input {
+    max-width: 300px;
+    border: 2px solid #6c757d;
+    transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+    .search-input:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 5px rgba(13, 110, 253, 0.5);
+    }
+
+
+.dependencia-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #e0e0e0;
+    font-family: Arial, sans-serif;
+}
+
+.dependencia-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dependencia-display:hover {
+    background-color: #e9ecef;
+    cursor: default;
+}

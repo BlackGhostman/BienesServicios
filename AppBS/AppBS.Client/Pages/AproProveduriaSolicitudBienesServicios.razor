@@ -1,0 +1,2711 @@
+﻿@page "/aproproveduriasolicitudbienesservicios"
+@page "/aproproveduriasolicitudbienesservicios/{idSolicitud:int?}"
+@inject HttpClient Http
+@using AppBS.Shared
+@using System.Text.Json
+@inject IJSRuntime JS
+@using System.Text
+@using AppBS.Shared.services
+@using System.Globalization
+@using AppBS.Shared.DTO
+
+<EditForm Model="@nuevoBien" class="container mt-4">
+
+
+    <div class="container mt-4" >
+        <div class="card">
+            <!-- Encabezado con mejor accesibilidad y resaltado -->
+            <div class="card-header bg-light text-dark d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    Estado:
+                    <span class="fw-bold text-info">
+                        @EnumExtensions.GetDescription((EnumExtensions.EstadoSolicitud)nuevoBien.Estado)
+                    </span>
+                </h4>
+
+                <span class="badge bg-primary text-white fs-4 fw-bold rounded-pill px-3 py-2">
+                    # @NumeroConsecutivo
+                </span>
+            </div>
+
+
+
+
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+
+                    <div class="input-group">
+                        <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#gestionarDocumentosModal">
+                            <i class="bi bi-folder-plus"></i> Gestionar Documentos
+                        </button>
+
+
+                    </div>
+
+                    
+                </div>
+
+
+
+                <div class="row mb-3">
+
+
+                    <div class="col-md-4">
+
+                       
+
+                        <div class="input-group">
+                            <InputNumber id="ficha" class="form-control" placeholder="Ficha" @bind-Value="nuevoBien.NumeroConsecutivo" disabled />
+                            <button class="btn btn-outline-secondary" @onclick="ObtenerBienServicio">
+                                <i class="bi bi-search" style="font-size: 1.5rem;"></i>
+                            </button>
+                        </div>
+
+                    </div>
+
+
+                 
+                    <div class="col-md-4">
+                        <label for="fecha" class="form-label">Fecha</label>
+                        <InputDate id="fecha" class="form-control" @bind-Value="nuevoBien.FechaEmision" />
+                    </div>
+
+
+
+
+                    <div class="col-md-4">
+                        <label class="form-label">Dependencia Solicitante</label>
+                        <div class="dependencia-display">
+                            @if (dependencia == null)
+                            {
+                                <span class="text-muted">Cargando...</span>
+                            }
+                            else
+                            {
+                                <span class="dependencia-value">@dependencia.Codigo - @dependencia.Descripcion</span>
+                            }
+                        </div>
+                    </div>
+
+
+
+                </div>
+                <div class="mb-3">
+                    <label for="descripcion" class="form-label">Descripción General</label>
+                    <textarea id="descripcion" class="form-control" rows="3" @bind="nuevoBien.DescripcionRequerimiento"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="finalidad" class="form-label">Finalidad Pública</label>
+                    <textarea id="finalidad" class="form-control" rows="3" @bind="nuevoBien.FinalidadPerseguida"></textarea>
+                </div>
+
+                <div class="row mb-3">
+
+                    <div class="col-md-3">
+                        <label for="estimacion" class="form-label">Estimación Total</label>
+                        <input type="text" id="estimacion" class="form-control"
+                               @oninput="HandleInput" value="@estimacionTotalTexto" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="presupuesto" class="form-label">Presupuesto Disponible</label>
+                        <input type="text" id="presupuesto" class="form-control"
+                               value="@presupuestoFormateado"
+                               @oninput="ActualizarPresupuesto"  />
+                    </div>
+
+                      <div class="col-md-3">
+                        <label for="estimacion" class="form-label">Tipo Presupuesto</label>
+                        <InputSelect id="tipoDocumento" class="form-select" @bind-Value="nuevoBien.TipoBienServicio" required>
+                            <option value="0">Seleccione un Tipo Presupuesto</option>
+
+                            @foreach (var tipoBienServicio in Enum.GetValues(typeof(EnumExtensions.TipoBienServicio)).Cast<EnumExtensions.TipoBienServicio>())
+
+                            {
+                                <option value="@((int)tipoBienServicio)">
+                                    @EnumExtensions.GetDescription(tipoBienServicio)
+                                </option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                </div>
+
+                <!-- Campo Bien o Servicio con botón "+" integrado -->
+                <div class="mb-3">
+                    <label for="bienServicio" class="form-label">Bien o Servicio</label>
+                    <div class="input-group">
+                        <input type="text" id="bienServicio" class="form-control" placeholder="Ingrese un producto o servicio"  />
+                        
+                    </div>
+                </div>
+
+
+                <div class="table-responsive">
+    <table id="serviciosTable" class="table table-striped table-hover align-middle table-bordered shadow-sm">
+        <thead class="table-secondary text-center">
+            <tr>
+                <th>Selec</th>
+                <th>Linea</th>
+                <th>Código Identificación</th>
+                <th>Nombre Identificación</th>
+                <th>Cantidad</th>
+                <th>Monto Unitario</th>
+                <th>Subtotal</th>
+                <th>Aplica Presupuesto</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (productosSeleccionados != null && productosSeleccionados.Count > 0)
+            {
+                @foreach (var producto in productosSeleccionados)
+                {
+                    <tr>
+                        <td class="text-center">
+                            <!-- Asegurándonos de manejar el cambio correctamente con @onchange -->
+                                            <InputRadioGroup @bind-Value="productoSeleccionadoIdUser" class="d-flex gap-3">
+                                
+                                                    <InputRadio class="form-check-input"
+                                                                Value="@producto.Prod_id"
+                                                                id="@productoSeleccionadoId(producto)"
+                                                                @onclick="() => OnProductoSeleccionado(producto)" />
+                                                
+                                            </InputRadioGroup>
+                        </td>
+                              <td>
+                                            <input type="number" class="form-control text-end " step="0.01" min="0"
+                                                   @bind="producto.Linea" style="width: 80px;" disabled />
+                                        </td>
+
+
+                        <td>@producto.Prod_id</td>
+                        <td>@producto.Prod_nm</td>
+                        <td>
+                            <input type="number" class="form-control text-end" step="0.01" min="0"
+                                   @bind="producto.Cantidad" @bind:event="oninput"
+                                                   @onchange="() => CalcularSubtotal(producto)" disabled />
+                        </td>
+                        <td>
+                            <input type="number" class="form-control text-end" step="0.01" min="0"
+                                   @bind="producto.MontoUnitario" @bind:event="oninput"
+                                                   @onchange="() => CalcularSubtotal(producto)" style="width: 95px;" disabled />
+
+                        </td>
+                        <td class="text-end fw-bold">@producto.Subtotal.ToString("N2")</td>
+                        <td class="text-center">
+
+                                            <div class="text-center mt-2">
+                                                @if (producto.TipoPresupuesto > 0)
+                                                {
+                                                    <div class="fw-bold text-primary">
+                                                        @(EnumExtensions.GetDescription((EnumExtensions.TipoPresupuesto)producto.TipoPresupuesto))
+                                                    </div>
+                                                }
+                                            </div>
+
+
+
+                                            <InputRadioGroup @bind-Value="producto.AplicaPresupuesto" class="d-flex gap-3"  >
+                                                <div class="form-check">
+                                                    <InputRadio class="form-check-input" Value="true"
+                                                                id="@GetPopoverId(producto)"
+                                                                @onclick="() => MostrarPopoverTipoPresupuesto(producto)" disabled />
+                                                    <label class="form-check-label">Sí</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <InputRadio class="form-check-input" Value="false"
+                                                                id="@GetPopoverId(producto)"
+                                                                @onclick="() => MostrarPopover(producto)" disabled />
+                                                    <label class="form-check-label">No</label>
+                                                </div>
+                                            </InputRadioGroup>
+                            <div class="text-center mt-2">
+                                @if (!string.IsNullOrEmpty(producto.Justificacion))
+                                {
+                                    <button type="button" class="btn btn-info btn-sm"
+                                            data-bs-toggle="tooltip" title="@producto.Justificacion">
+                                        <i class="bi bi-file-text"></i>
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                        
+                    </tr>
+                }
+            }
+        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="6" class="fw-bold text-end">Total</td>
+                                <td class="fw-bold">₡ @productosSeleccionados.Sum(c => c.Subtotal).ToString("N2")</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+    </table>
+</div>
+
+         
+
+                <!-- Nuevos campos -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label for="partidaEspecifica" class="form-label">Partida Específica</label>
+                        <div>
+                            <InputRadioGroup @bind-Value="nuevoBien.PartidaEspecifica" id="partidaEspecifica" class="d-flex gap-3" @onchange="(e) => OnPartidaEspecificaChanged((bool)e.Value)">
+                            <div class="form-check">
+                                <InputRadio class="form-check-input" Value="false" />
+                                <label class="form-check-label">Sí</label>
+                            </div>
+                            <div class="form-check">
+                                <InputRadio class="form-check-input" Value="true" />
+                                <label class="form-check-label">No</label>
+                            </div>
+                        </InputRadioGroup>
+
+                            
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="recursoHumano" class="form-label">Recurso Humano e Infraestructura</label>
+                        <input type="text" id="recursoHumano" class="form-control" @bind="nuevoBien.RecursosInfraestructura" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="obraPublica" class="form-label">Obra Pública</label>
+                        <div class="form-check">
+                            <input type="checkbox" id="obraPublica" class="form-check-input" @bind="nuevoBien.ObraPublica" />
+                            <label for="obraPublica" class="form-check-label"></label>
+                        </div>
+                    </div>
+
+
+
+                    <div class="col-md-3">
+                        <label for="fiscalizador" class="form-label" >Fiscalizador</label>
+                        <input type="text" id="fiscalizador" class="form-control" @bind="nuevoBien.EncargadosInspeccion" />
+
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+
+
+
+                    <div class="col-md-4">
+                        <label class="form-label">Meta</label>
+                        <div class="input-group">
+                            @if (metas == null)
+                            {
+                                <p><em>Cargando...</em></p>
+                            }
+                            else
+                            {
+                                <InputSelect id="select-metas" class="form-control select-metas" @bind-Value="nuevoBien.Meta" @onchange="ObtenerMetas">
+                                   <option value="0">Seleccione una meta</option> <!-- Opción por defecto -->
+                                    @foreach (var meta in metas)
+                                    {
+                                        <option value="@meta.Codigo">@meta.Codigo @meta.Descripcion</option>
+                                    }
+                                </InputSelect>
+                                <button class="btn btn-outline-primary" type="button" @onclick="ObtenerCuentas">
+                                    <i class="bi bi-clipboard-check"></i>
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+
+
+                    <div class="col-md-3">
+                        <label for="cuenta" class="form-label">Selección de cuenta</label>
+                        @if (Cuentas == null)
+                        {
+                            <p><em>Cargando...</em></p>
+                        }
+                        else
+                        {
+                            <InputSelect id="select-cuentas" class="form-control select-cuentas" @bind-Value="nuevoBien.Cuenta" >
+                                <option value="">Seleccione una cuenta</option> <!-- Opción por defecto -->
+                                @foreach (var cuenta in Cuentas)
+                                {
+                                    <option value="@cuenta.C2cta-@cuenta.C3cta-@cuenta.C4cta-@cuenta.C5cta-@cuenta.C6cta">@cuenta.Tnum - @cuenta.C2cta - @cuenta.C3cta - @cuenta.C4cta - @cuenta.C5cta - @cuenta.C6cta - @cuenta.Mdet</option>
+
+                                }
+                            </InputSelect>
+                        }
+
+                    </div>
+                   
+
+                    <!-- Tabla de Códigos Presupuestarios -->
+                    <div class="table-responsive mt-3">
+                        <table id="cuentasTable" class="table table-striped table-hover align-middle table-bordered shadow-sm">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Meta</th>
+                                    <th>Descripción</th>
+                                    <th>Cod. Servicio</th>
+                                    <th>Presupuesto</th>
+                                    <th>A Disponer</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var presupuesto in presupuestosFiltrados)
+                                {
+                                    <tr>
+                                        <td> @presupuesto.C2cta - @presupuesto.C3cta - @presupuesto.C4cta - @presupuesto.C5cta - @presupuesto.C6cta</td>
+                                        <td>@presupuesto.Meta.Codigo</td>
+                                        <td>@presupuesto.Mdet</td>
+                                        <td>@presupuesto.IdBienServicio</td>
+                                        <td>₡ @presupuesto.Msalfi.ToString("N2")</td>
+
+                                        <!-- Input Editable para "A Disponer" con Validación -->
+                                        <td>
+                                            <input type="number" class="form-control form-control-sm" min="0" step="0.01"
+                                                   @bind="presupuesto.ADisponer"
+                                                   @bind:event="oninput"
+                                                   @onchange="() => ValidarMonto(presupuesto)" disabled />
+                                        </td>
+
+                                        
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4" class="fw-bold text-end">Total</td>
+                                    <td class="fw-bold">₡ @presupuestosFiltrados.Sum(c => c.Msalfi).ToString("N2")</td>
+                                    <td class="fw-bold">₡ @presupuestosFiltrados.Sum(c => c.ADisponer).ToString("N2")</td>
+                                    
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+
+
+                </div>
+
+
+
+                <div class="row text-center">
+                    <!-- Aprobación Solicitante -->
+                    <div class="col-md-4">
+                        <div class="border p-3">
+                            <p class="fw-bold">
+                                <i class="bi bi-person-circle"></i> Presupuesto
+                            </p>
+                            <button class="btn btn-outline-success" @onclick="PreAprobar" disabled="@DesactivarAprobado">
+                                <i class="bi bi-check-circle"></i> Aprobar
+                            </button>
+                            <button class="btn btn-outline-danger" @onclick="PreRechazar" disabled="@DesactivarRechazado">
+                                <i class="bi bi-x-circle"></i> Rechazar
+                            </button>
+                            <button class="btn btn-outline-primary" @onclick="Anular" disabled="@DesactivarRechazado">
+                                <i class="bi bi-building"></i> Anular
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+
+                
+                <br />
+
+               
+                <button class="btn btn-primary" @onclick="GenerarPDF">
+                    <i class="bi bi-eye"></i> Previsualizar
+                </button>
+
+
+            </div>
+        </div>
+    </div>
+
+</EditForm>
+
+
+
+<!-- Modal de Gestión de Documentos -->
+<div class="modal fade" id="gestionarDocumentosModal" tabindex="-1" aria-labelledby="gestionarDocumentoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <!-- Modal más ancho para contener la tabla completa -->
+        <div class="modal-content">
+            <!-- Encabezado del Modal -->
+            <div class="modal-header">
+              <h5 class="modal-title text-primary fw-bold" id="gestionarDocumentoModalLabel">Gestor de Documentos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <!-- Cuerpo del Modal -->
+            <div class="modal-body">
+       
+               <div class="row"> 
+                <!-- Formulario de Documento -->
+                    <div class="col-md-4 mb-2">
+                    <label for="tipoDocumento" class="form-label">Tipo de Documento</label>
+                    <InputSelect id="tipoDocumento" class="form-select" @bind-Value="documentoActual.TipoDocumento" required>
+                            <option value="0">Seleccione un Tipo</option>
+
+                            @foreach (var tipo in Enum.GetValues(typeof(EnumExtensions.TipoDoc)).Cast<EnumExtensions.TipoDoc>())
+                            {
+                                <option value="@((int)tipo)">
+                                    @EnumExtensions.GetDescription(tipo)
+                                </option>
+                            }
+                    </InputSelect>
+                </div>
+
+                <div class="col-md-6 mb-2">
+                    <label for="nombreDocumento" class="form-label">Nombre del Documento</label>
+                    <input type="text" id="nombreDocumento" class="form-control" @bind="documentoActual.Nombre" required />
+                </div>
+
+                  
+                 <div class="col-md-6 mb-2">
+                    <label for="archivoDocumento" class="form-label">Archivo</label>
+                        <InputFile class="form-control" OnChange="CargarDocumentoIMGPDF" />
+                </div>
+
+                    <!-- Alerta de error de Bootstrap -->
+                    @if (!string.IsNullOrEmpty(mensajeError))
+                    {
+                        <div class="alert alert-warning mt-2" role="alert">
+                            @mensajeError
+                        </div>
+                    }
+
+                  <div class="col-md-6 mb-2">
+                        <label for="descripcionDocumento" class="form-label">Descripción</label>
+                        <textarea id="descripcionDocumento" class="form-control" @bind="documentoActual.Descripcion" rows="3"></textarea>
+                    </div>
+
+
+                    <!-- Pie de página del Modal -->
+                    <div class="modal-footer">
+                        <button type="button" @onclick="AgregarDocLista" class="btn btn-primary">Guardar</button>
+                        <button class="btn btn-secondary" type="button" @onclick="LimpiarDocumento">Limpiar</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+
+                </div>
+
+
+                <!-- Tabla de Documentos -->
+                <h4 class="mt-4">Lista de Documentos</h4>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Tipo de Documento</th>
+                                <th scope="col">Nombre</th>
+                                <th scope="col">Descargar</th>
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (documentos != null && documentos.Count > 0)
+                            {
+                                @foreach (var documento in documentos)
+                                {
+                                    <tr>
+                                        <td>@EnumExtensions.GetDescription((EnumExtensions.TipoDoc)documento.TipoDocumento)</td>
+                                        <td>@documento.Nombre</td>
+                                        <td>
+                                            <button class="btn btn-success btn-sm me-2" @onclick="() => DescargarDocumento(documento.Id)" aria-label="Descargar documento">
+                                                <i class="bi bi-download"></i> <!-- Icono de descarga -->
+                                            </button>
+                                            
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="3" class="text-center">No hay documentos registrados.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal de Rechazo -->
+<div class="modal fade" id="rechazoModal" tabindex="-1" aria-labelledby="rechazoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rechazoModalLabel">Rechazar Solicitud</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="CerrarModalRechazo"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Selector con InputSelect -->
+                <div class="mb-3">
+                    <label for="destinoRechazo" class="form-label">¿A quién desea dirigir el rechazo?</label>
+                    <InputSelect id="destinoRechazo" class="form-select" @bind-Value="controlAprobaciones.DestinoRechazo">
+                        @foreach (var destino in Enum.GetValues(typeof(EnumExtensions.DestinoRechazoProveeduria)).Cast<EnumExtensions.DestinoRechazoProveeduria>())
+                        {
+                            <option value="@destino">@EnumExtensions.GetDescription(destino)</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <!-- Campo de observaciones -->
+                <div class="mb-3">
+                    <label class="form-label">Observaciones</label>
+                    <textarea class="form-control" @bind="controlAprobaciones.Observaciones" rows="4" placeholder="Escribe tus observaciones..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @onclick="CerrarModalRechazo">Cancelar</button>
+                <button type="button" class="btn btn-danger" @onclick="GuardarRechazo">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+@code {
+
+    [Parameter]
+    public int idSolicitud { get; set; }
+
+    [Inject] UserStateService UserStateService { get; set; }
+
+    private bool desactivarAgregraCuenta = true;
+
+    private SolicitudBienServicioDTO bienServicio;
+
+
+    private string GetPopoverId(Producto producto) => $"popover-{producto.Prod_id}";
+    private Producto productoSeleccionado;
+
+
+
+    //Esto referie a las variable para el control de los productos seleccionados
+    private string productoSeleccionadoIdUser;
+    private string productoSeleccionadoId(Producto producto) => $"{producto.Prod_id}";
+
+
+    //Número de consecutivo a buscar
+    private int NumeroConsecutivo;
+
+
+    //Poner banderas para desactivar los botones
+    private bool DesactivarRechazado = false;
+    private bool DesactivarAprobado = false;
+
+
+
+
+    /// <summary>
+    /// Datos de contro lde aprobaciones
+    /// </summary>
+
+    ControlAprobaciones controlAprobaciones = new ControlAprobaciones();
+
+
+    //Seccion donde definimos variables para la carga de documentos
+    //Gestion de documentos por estudiante
+    private List<Documento> documentos = new();
+    private Documento documentoActual = new Documento();
+
+    private bool mostrarModal = false;
+    private string tituloModal = "Agregar Documento";
+    private int contadorDocumentos = 0;
+    private string mensajeError = string.Empty;
+
+
+    private bool DesactivarActualizar = true;
+    private bool DesactivarAgregar = false;
+    private bool isSubmitting = false;
+    private string respuesta = "";
+
+
+
+    private SolicitudBienServicio nuevoBien = new SolicitudBienServicio();
+
+
+    // Variables de la página
+
+    //Valores para gestionar las tablas de productos de SICOP
+    private List<Producto> productosFiltrados = new List<Producto>();
+    private List<Producto> productos = new List<Producto>();
+
+
+
+    // Lista para mostrar solo los presupuestos filtrados
+    private List<Presupuesto> presupuestosFiltrados = new List<Presupuesto>();
+
+
+    private bool isLoading = false;
+
+
+    //  private SolicitudBienesServicios solicitud = new SolicitudBienesServicios();
+    // private BienServicio bienServicio = new BienServicio();
+    private string dependenciaSeleccionada = string.Empty;
+    private string descripcionDependencia = string.Empty;
+    // private string metaSeleccionada = string.Empty;
+    private string cuentaSeleccionada = string.Empty;
+
+
+
+    /// <summary>
+    /// 
+    private Dependencia? dependencia;
+    private List<Dependencia> dependencias = new List<Dependencia>();
+
+    /// 
+    /// </summary>
+
+
+
+    private bool CamposHabilitados = false;
+    private bool EsObraPublica = false; // Estado inicial apagado
+
+
+    private List<Meta> metas = new List<Meta>(); // Lista de metas simulada
+    private List<Cuenta> Cuentas { get; set; } = new();
+    private List<Presupuesto> presupuestos  { get; set; } = new();
+    private List<Producto> productosSeleccionados = new();
+    // private string MetaSeleccionada = string.Empty; // Meta seleccionada
+    //private List<CodigoPresupuestario> CodigosPresupuestarios = new();
+    private string NuevoBienServicio = "";
+    private int presupuestoDisponible = 0; // Valor inicial
+
+
+
+    // Estado de las firmas
+    private bool FirmaSolicitante { get; set; } = false;
+    private bool FirmaPresupuesto { get; set; } = false;
+    private bool FirmaFinanciero { get; set; } = false;
+
+    // Métodos para activar firmas
+    private void FirmarSolicitante()
+    {
+        FirmaSolicitante = true;
+    }
+
+    private void FirmarPresupuesto()
+    {
+        if (FirmaSolicitante)
+        {
+            FirmaPresupuesto = true;
+        }
+    }
+
+    private void FirmarFinanciero()
+    {
+        if (FirmaPresupuesto)
+        {
+            FirmaFinanciero = true;
+        }
+    }
+
+
+
+
+    // Método que se llama cuando un producto es seleccionado o desmarcado
+    private async Task SeleccionarProducto(Producto producto)
+    {
+        try
+        {
+            if (productosSeleccionados.Contains(producto))
+            {
+                // Si el producto ya está en la lista, lo eliminamos
+                productosSeleccionados.Remove(producto);
+            }
+            else
+            {
+                // Si no está, lo agregamos a la lista
+                productosSeleccionados.Add(producto);
+                desactivarAgregraCuenta = false;
+
+            }
+
+            //await  CerrarModalProductos();
+        }
+
+
+        catch (Exception ex)
+        {
+            // Manejo de excepciones
+            MostrarNotificacion($"Error al seleccionar/desmarcar producto: {ex.Message}");
+        }
+    }
+
+    // Método para confirmar la selección de productos
+    private async Task ConfirmarSeleccion()
+    {
+        try
+        {
+            if (productosSeleccionados.Count == 0)
+            {
+                // Validación: Si no hay productos seleccionados, mostramos un mensaje de error
+                MostrarNotificacion("Debe seleccionar al menos un producto.");
+                return;
+            }
+            else
+
+            {
+                // Ejemplo: Mostrar los productos seleccionados
+                foreach (var producto in productosSeleccionados)
+                {
+                    MostrarNotificacion($"Producto seleccionado: {producto.Prod_nm}");
+                }
+                await JS.InvokeVoidAsync("destroyDataTable", "productosTable");
+
+                await JS.InvokeVoidAsync("CerrarModal", "buscarCatalogoModal");
+
+            }
+
+            // Realizar cualquier otra validación o procesamiento necesario aquí
+
+            // Cerrar el modal o realizar otra acción
+            // Lógica adicional aquí...
+        }
+        catch (Exception ex)
+        {
+            // Manejo de excepciones
+            MostrarNotificacion($"Error al confirmar selección: {ex.Message}");
+        }
+    }
+
+
+
+
+
+    private void SeleccionarTodos(ChangeEventArgs e)
+    {
+        bool isChecked = (bool)e.Value;
+        if (isChecked)
+        {
+            //   productosSeleccionados = productosFiltrados.ToList();
+        }
+        else
+        {
+            productosSeleccionados.Clear();
+        }
+    }
+
+
+    private void ProcesarSeleccion(List<Producto> productos)
+    {
+        // Implementa la lógica según la necesidad
+        Console.WriteLine($"Productos seleccionados: {productos.Count}");
+    }
+
+
+
+    /* Sección donde se cargan datos al modal de productos */
+    private async Task CargarProdutosSICOP()
+    {
+        isLoading = true; // Activa el indicador de carga
+        productosFiltrados = new List<Producto>(); // Reinicia la lista
+        productos = new List<Producto>();
+
+        try
+        {
+
+            var response = await Http.GetAsync("api/catalogo/productos");
+
+
+            if (response.IsSuccessStatusCode)
+            {
+                var respuesta = await response.Content.ReadFromJsonAsync<List<Producto>>();
+
+                if (respuesta != null && respuesta.Count > 0)
+                {
+                    productos = respuesta;
+                    productosFiltrados = productos;
+                    MostrarNotificacion("Productos cargados exitosamente.");
+                }
+                else
+                {
+                    MostrarNotificacion("No se encontraron productos.");
+                }
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                MostrarNotificacion("No se encontraron productos.");
+            }
+            else
+            {
+                MostrarNotificacion($"Error en la solicitud: {response.StatusCode}");
+            }
+
+
+            await RefrescarTabla();
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion($"Error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false; // Desactiva el indicador de carga
+        }
+    }
+
+
+
+    public static decimal ConvertirDecimal(string valor)
+    {
+        if (decimal.TryParse(valor, out decimal resultado))
+        {
+            return resultado;
+        }
+        return 0; // Retorna 0 si la conversión falla
+    }
+
+
+
+
+
+    private async Task ModificarSolicitud()
+    {
+        try
+        {
+            // Asignar valores al nuevoBien
+            nuevoBien.EstimacionTotal = ConvertirDecimal(estimacionTotalTexto);
+            nuevoBien.PresupuestoDisponible = ConvertirDecimal(presupuestoFormateado);
+            nuevoBien.Estado = 1;
+            nuevoBien.CodDependencia = dependencia.Codigo;
+            nuevoBien.NomDependencia = dependencia.Descripcion;
+            nuevoBien.FirmaSolicitante = true;
+            nuevoBien.FirmaPresupuesto = false;
+            nuevoBien.FirmaFinanciero = false;
+
+            // Validar el formulario antes de continuar
+            if (!ValidarFormulario())
+            {
+                // MostrarNotificacion("❌ Error: El formulario contiene errores. Revíselo antes de continuar.");
+                return; // Termina la ejecución si la validación falla
+            }
+
+            // Crear el DTO
+            var solicitudBienServicioDTO = new SolicitudBienServicioDTO()
+                {
+                    BienServicio = nuevoBien,
+                    Productos = productosSeleccionados,
+                    Presupuestos = presupuestos,
+                    Documentos = documentos
+                };
+
+            // Serializar el contenido a JSON
+            var contenido = new StringContent(JsonSerializer.Serialize(solicitudBienServicioDTO), Encoding.UTF8, "application/json");
+
+            // Crear la solicitud HTTP con método PATCH
+            var solicitud = new HttpRequestMessage(HttpMethod.Patch, $"api/solicitudbienservicio/modificar/{nuevoBien.NumeroConsecutivo}")
+                {
+                    Content = contenido
+                };
+
+            // Enviar la solicitud al backend
+            var respuestaHttp = await Http.SendAsync(solicitud);
+
+            if (respuestaHttp.IsSuccessStatusCode)
+            {
+                // Leer la respuesta del servidor
+                var mensajeRespuesta = await respuestaHttp.Content.ReadAsStringAsync();
+                MostrarNotificacion($"Solicitud modificada exitosamente. ID: {nuevoBien.NumeroConsecutivo}");
+
+                // Opcional: Actualizar la UI después de modificar la solicitud
+                await LimpiarFormulario();
+            }
+            else
+            {
+                // Si la respuesta no es exitosa, lanzar una excepción con el mensaje de error
+                var errorMessage = await respuestaHttp.Content.ReadAsStringAsync();
+                throw new Exception($"Error al modificar la solicitud: {errorMessage}");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Manejo de errores en el frontend
+            MostrarNotificacion("❌ Error: " + ex.Message);
+        }
+    }
+
+
+
+
+    private async Task ObtenerBienServicio()
+    {
+        try
+        {
+            // Número consecutivo que se debe pasar al servicio
+            // Realizar la llamada al servicio usando el número consecutivo
+            var response = await Http.GetFromJsonAsync<SolicitudBienServicioDTO>($"api/solicitudbienservicio/obtener-bien-servicio/{nuevoBien.NumeroConsecutivo}");
+
+            if (response != null)
+            {
+                presupuestosFiltrados.Clear();
+
+                bienServicio = response;
+                nuevoBien = bienServicio.BienServicio;
+                documentos = bienServicio.Documentos;
+                presupuestos = bienServicio.Presupuestos;
+                productosSeleccionados = bienServicio.Productos;
+
+
+                desactivarAgregraCuenta = false;
+                DesactivarActualizar = false;
+                DesactivarAgregar = true;
+                NumeroConsecutivo = nuevoBien.NumeroConsecutivo;
+
+                estimacionTotalTexto = nuevoBien.EstimacionTotal.ToString();
+                presupuestoFormateado = nuevoBien.PresupuestoDisponible.ToString();
+
+
+                dependencia ??= new Dependencia(); // Asegura que el objeto esté instanciado
+
+                if (nuevoBien.CodDependencia != null)
+                {
+                    dependencia.Codigo = nuevoBien.CodDependencia;
+                    dependencia.Descripcion = nuevoBien.NomDependencia;
+                }
+                else
+                {
+                    dependencia.Codigo = "000";
+                    dependencia.Descripcion = "Error Dependencia";
+                }
+
+
+                // Recorrer los presupuestos y asignar MetaCodigo a Meta.codigo
+                foreach (var presupuesto in presupuestosFiltrados)
+                {
+                    if (!string.IsNullOrEmpty(presupuesto.MetaCodigo)) // Verificamos que MetaCodigo no esté vacío
+                    {
+                        // Si Meta es null, lo instanciamos
+                        if (presupuesto.Meta == null)
+                        {
+                            presupuesto.Meta = new Meta(); // Instanciamos Meta si es null
+                        }
+
+                        // Asignamos el valor de MetaCodigo al campo Meta.codigo
+                        presupuesto.Meta.Codigo = presupuesto.MetaCodigo;
+                    }
+                }
+
+            }
+            else
+            {
+                // Mostrar un mensaje o realizar alguna acción si no se encuentra el bien servicio
+                MostrarNotificacion("No se encontraron datos para el BienServicio.");
+            }
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion("No se encontraron datos para el BienServicio.");
+        }
+    }
+
+
+
+
+    private async Task GuardarSolicitud()
+    {
+
+
+        nuevoBien.EstimacionTotal = ConvertirDecimal(estimacionTotalTexto);
+        nuevoBien.PresupuestoDisponible = ConvertirDecimal(presupuestoFormateado);
+        nuevoBien.Estado = 1;
+        nuevoBien.CodDependencia = dependencia.Codigo;
+        nuevoBien.NomDependencia = dependencia.Descripcion;
+        nuevoBien.FirmaSolicitante = true;
+        nuevoBien.FirmaPresupuesto = false;
+        nuevoBien.FirmaFinanciero = false;
+
+
+
+        // Validar el formulario antes de continuar
+        if (!ValidarFormulario())
+        {
+            //   MostrarNotificacion("❌ Error: El formulario contiene errores. Revíselo antes de continuar.");
+            return; // Termina la ejecución si la validación falla
+        }
+
+
+        // Crear el DTO
+        SolicitudBienServicioDTO solicitudBienServicioDTO = new SolicitudBienServicioDTO()
+            {
+                BienServicio = new SolicitudBienServicio(),
+                Productos = new List<Producto>(),
+                Presupuestos = new List<Presupuesto>(),
+                Documentos = new List<Documento>()
+            };
+
+        solicitudBienServicioDTO.BienServicio = nuevoBien;
+        solicitudBienServicioDTO.Productos = productosSeleccionados;
+        solicitudBienServicioDTO.Presupuestos = presupuestos;
+        solicitudBienServicioDTO.Documentos = documentos;
+
+        try
+        {
+            // Enviar la solicitud al backend
+            var response = await Http.PostAsJsonAsync("api/solicitudbienservicio/crear", solicitudBienServicioDTO);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Si la respuesta es exitosa, leer el contenido y retornarlo
+                var solicitudCreada = await response.Content.ReadFromJsonAsync<SolicitudBienServicio>();
+                MostrarNotificacion($"Solicitud creada con éxito. ID: + {solicitudCreada.Id}");
+                await LimpiarFormulario();
+            }
+            else
+            {
+                // Si la respuesta no es exitosa, lanzar una excepción con el mensaje de error
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Error al crear la solicitud: {errorMessage}");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Manejo de errores en el frontend
+            MostrarNotificacion("❌ Error:" + ex.Message);
+        }
+    }
+
+
+
+
+
+    private async Task RefrescarTabla()
+    {
+        // Vuelve a inicializar DataTables
+        await JS.InvokeVoidAsync("initializeDataTable", "productosTable");
+
+
+    }
+
+    private async Task CerrarModalProductos()
+    {
+        await JS.InvokeVoidAsync("destroyDataTable", "productosTable");
+        // Vuelve a inicializar DataTables
+        await JS.InvokeVoidAsync("CerrarModal", "buscarCatalogoModal");
+
+
+    }
+
+
+
+    private async Task ObtenerMetas()
+    {
+        try
+        {
+            // Verificar si 'dependencia' es null antes de acceder a sus propiedades
+            if (dependencia != null && !string.IsNullOrEmpty(dependencia.Codigo))
+            {
+                // Llamar al servicio que obtiene las metas según la dependencia seleccionada
+                await CargarMetasXUnidad(dependencia.Codigo);
+            }
+            else
+            {
+                // Si dependencia es null o el Codigo está vacío, maneja el caso
+                MostrarNotificacion("Dependencia o código no válido.");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Registrar el error o mostrar un mensaje al usuario
+            MostrarNotificacion($"Error al obtener metas: {ex.Message}");
+        }
+    }
+
+
+
+    private async Task ObtenerCuentas()
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(nuevoBien.Meta))
+            {
+                // Obtener la meta seleccionada
+                Meta metaSeleccionada = ObtenerMetaSeleccionada();
+                nuevoBien.Meta = metaSeleccionada.Codigo;
+                nuevoBien.NomMeta = metaSeleccionada.Descripcion;
+
+                // Llamar al servicio para obtener las cuentas según la meta seleccionada
+                await CargarCuentaXMeta(nuevoBien.Meta);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Registrar el error o mostrar un mensaje al usuario
+            Console.WriteLine($"Error al obtener cuentas: {ex.Message}");
+            // También podrías usar un servicio de logging o notificaciones en la UI
+        }
+    }
+
+
+
+    private async Task EliminarProducto(Producto producto)
+    {
+        try
+        {
+            // Mostrar confirmación al usuario antes de eliminar
+            bool confirm = await JS.InvokeAsync<bool>("confirm", "¿Estás seguro de que deseas eliminar el producto o servicio?");
+
+            if (!confirm)
+            {
+                return;
+            }
+
+            if (producto == null)
+            {
+                MostrarNotificacion("⚠️ No se puede eliminar un producto nulo.");
+                return;
+            }
+
+            if (productosSeleccionados.Contains(producto))
+            {
+                // 🔹 Eliminar el producto de la lista de productos seleccionados
+                productosSeleccionados.Remove(producto);
+
+                // 🔹 Eliminar los presupuestos asociados a ese producto
+                presupuestos.RemoveAll(p => p.IdBienServicio == producto.Prod_id);
+
+                // 🔹 Actualizar la lista filtrada (vaciarla porque ya no hay producto seleccionado)
+                presupuestosFiltrados.Clear();
+
+                // 🔹 Actualizar la UI
+                StateHasChanged();
+
+                MostrarNotificacion($"✅ Producto eliminado exitosamente: {producto.Prod_nm}");
+            }
+            else
+            {
+                MostrarNotificacion("⚠️ El producto no se encuentra en la lista.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al eliminar el producto: {ex.Message}");
+            MostrarNotificacion("❌ Ocurrió un error al intentar eliminar el producto.");
+        }
+    }
+
+
+    private async Task OnUnidadChange(ChangeEventArgs e)
+    {
+        dependenciaSeleccionada = e.Value?.ToString();
+
+        // Buscar la descripción correspondiente en la lista de dependencias
+        //  var unidadSeleccionada = dependencias?.FirstOrDefault(d => d.Ucod == dependenciaSeleccionada);
+        //   descripcionDependencia = unidadSeleccionada?.Udes ?? string.Empty;
+        MostrarNotificacion(descripcionDependencia);
+    }
+
+
+
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        try
+        {
+
+            // Vuelve a inicializar DataTables
+
+            // Llamamos al controlador de la API que a su vez consulta el servicio web
+
+
+            if (idSolicitud != 0)
+
+            {
+                nuevoBien.NumeroConsecutivo = idSolicitud;
+                await  ObtenerBienServicio();
+            }
+
+
+            // await CargarDependenciaAsync(UserStateService.UsuarioAutenticado.Cedula);
+            //LimpiarFormulario();
+
+            //await ObtenerMetas();
+
+
+            // Vuelve a inicializar DataTables
+            await JS.InvokeVoidAsync("initializeDataTable", "serviciosTable");
+            await JS.InvokeVoidAsync("initializeDataTable", "cuentasTable");
+
+        }
+        catch (Exception ex)
+        {
+            // Manejo de errores si no se puede cargar la lista
+            MostrarNotificacion($"Error de carga de datos, contacte al Administrador de Sistema: {ex.Message}");
+            //dependencias = new List<Unidad>(); // Opcional: inicializamos con lista vacía
+        }        
+    }
+
+
+
+    /// <summary>
+    /// Metodo que consume el servicio de la lista completa de dependencias
+    /// </summary>
+    /// <param name="cedula"></param>
+    /// <returns></returns>
+    /*    private async Task CargarUnidadesAsync()
+    {
+    try
+    {
+    dependencias = await Http.GetFromJsonAsync<List<Unidad>>("api/finanzas/unidades");
+
+
+            }
+            catch (Exception ex)
+            {
+            MostrarNotificacion($"Error al cargar las dependencias: {ex.Message}");
+    dependencias = new List<Unidad>(); // Inicializamos con lista vacía en caso de error
+    }
+    }
+    */
+
+
+    private async Task CargarDependenciaAsync(string cedula)
+    {
+        try
+        {
+            var resultado = await Http.GetFromJsonAsync<Dependencia>($"api/rh/dependencia/{cedula}");
+
+            // Validar si el servicio devuelve un resultado nulo
+            if (resultado != null && !string.IsNullOrWhiteSpace(resultado.Codigo) && !string.IsNullOrWhiteSpace(resultado.Descripcion))
+            {
+                dependencia = resultado;
+            }
+            else
+            {
+                MostrarNotificacion("No se encontró una dependencia válida para la cédula ingresada.");
+                dependencia = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion($"Error al cargar la dependencia: {ex.Message}");
+            dependencia = null; // Asignamos null en caso de error
+        }
+    }
+
+
+
+
+    private async Task CargarCuentaXMeta(string meta)
+    {
+        try
+        {
+
+            Cuentas = await Http.GetFromJsonAsync<List<Cuenta>>($"api/finanzas/presupuesto/{meta}");
+            MostrarNotificacion($"Carga Exitosa de Cuentas");
+
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion($"Error al cargar las metas para la unidad {meta}: {ex.Message}");
+            Cuentas = new List<Cuenta>(); // Inicializamos con una lista vacía en caso de error
+        }
+    }
+
+
+
+
+    private async Task CargarMetasXUnidad(string unidad)
+    {
+        try
+        {
+            string valor = descripcionDependencia;
+
+            metas = await Http.GetFromJsonAsync<List<Meta>>($"api/finanzas/metas/{unidad}");
+            //  MostrarNotificacion($"Carga Exitosa de Metas");
+
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion($"Error al cargar las metas para la unidad {unidad}: {ex.Message}");
+            metas = new List<Meta>(); // Inicializamos con una lista vacía en caso de error
+        }
+    }
+
+
+
+    /*   private async Task ConsultarPresupuesto()
+    {
+    try
+    {
+    presupuestos = await Http.GetFromJsonAsync<List<Presupuesto>>($"api/presupuesto/{nuevoBien.Meta}/{nuevoBien.Cuenta}");
+    StateHasChanged(); // Forzar actualización de la UI
+    }
+    catch (Exception ex)
+    {
+    Console.Error.WriteLine($"Error al obtener presupuesto: {ex.Message}");
+    }
+    }*/
+
+    private async Task ConsultarPresupuesto()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(nuevoBien.Cuenta))
+            {
+                MostrarNotificacion("Debe seleccionar una meta.");
+                return;
+            }
+
+            // Obtener los nuevos presupuestos de la API
+            var presupuestoTemp = await Http.GetFromJsonAsync<List<Presupuesto>>(
+                $"api/finanzas/presupuestoPorMetaYPresupuesto/{nuevoBien.Meta}/{nuevoBien.Cuenta}");
+
+            if (presupuestoTemp == null || presupuestoTemp.Count == 0)
+            {
+                MostrarNotificacion("No se encontraron cuentas presupuestarias.");
+                return;
+            }
+
+            // Obtener el producto seleccionado
+            var productoSeleccionado = productosSeleccionados.FirstOrDefault(p => p.Seleccionado);
+            if (productoSeleccionado == null)
+            {
+                MostrarNotificacion("⚠️ Debe seleccionar un producto antes de agregar la cuenta presupuestaria.");
+                return;
+            }
+
+            // Asignar el Id del producto seleccionado a cada presupuesto nuevo
+            foreach (var presupuesto in presupuestoTemp)
+            {
+                presupuesto.IdBienServicio = productoSeleccionado.Prod_id;
+                if (presupuesto.Meta == null)
+                {
+                    presupuesto.Meta = new Meta(); // Asegúrate de que Meta está inicializado
+                }
+
+                presupuesto.Meta.Codigo = nuevoBien.Meta;
+            }
+
+
+
+            // 🔹 Verificar si la cuenta ya existe en la lista, comparando los campos clave e IdBienServicio
+            bool yaExiste = presupuestoTemp.Any(nuevo =>
+                presupuestos.Any(p =>
+                    p.IdBienServicio == productoSeleccionado.Prod_id && // Validar que pertenezcan al mismo producto
+                    p.C2cta == nuevo.C2cta &&
+                    p.C3cta == nuevo.C3cta &&
+                    p.C4cta == nuevo.C4cta &&
+                    p.C5cta == nuevo.C5cta &&
+                    p.C6cta == nuevo.C6cta
+                )
+            );
+
+            if (yaExiste)
+            {
+                MostrarNotificacion("⚠️ La cuenta presupuestaria ya se encuentra agregada.");
+                return;
+            }
+
+
+            // Si no existe, agregamos los nuevos presupuestos a la lista
+            presupuestos.AddRange(presupuestoTemp);
+
+            // 🔹 Filtrar los presupuestos asociados al producto seleccionado
+            presupuestosFiltrados = presupuestos
+                .Where(p => p.IdBienServicio == productoSeleccionado.Prod_id)
+                .ToList();
+
+
+
+
+            // Actualizar la UI
+            StateHasChanged();
+            MostrarNotificacion("✅ La cuenta se ha agregado exitosamente.");
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion($"❌ Error al obtener cuentas: {ex.Message}");
+        }
+    }
+
+
+
+
+
+
+    private class CodigoPresupuestario
+    {
+        public string Codigo { get; set; }
+        public string Descripcion { get; set; }
+        public decimal Monto { get; set; }
+    }
+
+    private void SeleccionarNuevo()
+    {
+        CamposHabilitados = false;
+    }
+
+    private void SeleccionarExistente()
+    {
+        CamposHabilitados = true;
+    }
+
+    private void MostrarNotificacion(string mensaje)
+    {
+        // Mostrar la notificación usando Bootstrap
+        JS.InvokeVoidAsync("eval", $@"
+            var toastElement = document.getElementById('successToast');
+            toastElement.querySelector('.toast-body').innerText = '{mensaje}';
+            var toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        ");
+    }
+
+
+
+
+
+    /*SEccion de metodos para la gestion de documento de un Bien y SErvicio*/
+    private async Task DescargarDocumento(int documentoId)
+    {
+        var documento = documentos.FirstOrDefault(d => d.Id == documentoId);
+
+        if (documento != null && documento.Contenido != null)
+        {
+            var base64 = Convert.ToBase64String(documento.Contenido);
+            var fileType = documento.TipoMime ?? "application/octet-stream"; // Tipo MIME del archivo
+            var fileName = documento.Nombre ?? "Documento";
+
+            // Crear enlace de descarga
+            var url = $"data:{fileType};base64,{base64}";
+            await JS.InvokeVoidAsync("blazorDownloadFile", url, fileName);
+        }
+    }
+
+    private async Task CargarDocumentoIMGPDF(InputFileChangeEventArgs e)
+    {
+        var archivo = e.File;
+
+        // Lista de tipos MIME permitidos
+        var tiposPermitidos = new[] { "image/jpeg", "image/jpg", "image/png", "application/pdf" };
+
+        if (tiposPermitidos.Contains(archivo.ContentType))
+        {
+            // Asigna el tipo MIME según el tipo de archivo cargado
+            documentoActual.TipoMime = archivo.ContentType;
+
+
+            // Limitar el tamaño del archivo para evitar problemas de memoria
+            long maxFileSize = 1024 * 1024 * 5; // 5 MB
+
+            using var stream = new MemoryStream();
+            await archivo.OpenReadStream(maxFileSize).CopyToAsync(stream);
+            documentoActual.Contenido = stream.ToArray();
+            // estudiante.DocAcuerdoP = stream.ToArray();
+
+            // Procesa o guarda el archivo aquí si es válido
+            mensajeError = string.Empty; // Limpiar mensaje de error si el archivo es válido
+        }
+        else
+        {
+            // Mostrar mensaje de error en la interfaz
+            mensajeError = "Solo se permiten imágenes o archivos PDF.";
+        }
+    }
+
+    private async Task AgregarDocLista()
+    {
+
+
+
+        /*/ if (DesactivarActualizar == false)
+        {
+
+        // Aquí puedes guardar los datos de `estudiante` en la base de datos
+        //    await Http.PostAsJsonAsync("api/estudiantes", estudiante);
+        if (isSubmitting) return;
+        // Lógica para guardar actividad
+        documentoActual.IdSolicitudBS = nuevoBien.Id;
+        var mensaje = await Http.PostAsJsonAsync("api/documento/crearDocumento", documentoActual);
+        respuesta = await mensaje.Content.ReadAsStringAsync(); ;
+        LimpiarDocumento();
+    await CargarDocumentos();
+
+
+
+        }
+        else
+        {*/
+        if (documentoActual.TipoDocumento == (int)EnumExtensions.TipoDoc.FirmaSolicitante)
+    {
+        if (documentos.Any(doc => doc.TipoDocumento == (int)EnumExtensions.TipoDoc.FirmaSolicitante))
+        {
+            MostrarNotificacion("❌ Ya existe un documento de tipo Firma Solicitante. Primero debe eliminar el documento firmado para poder adjuntar uno nuevo.");
+            return;
+        }
+    }
+
+
+
+    if (!ValidarDocumento())
+    {
+        return;
+    }
+
+        documentoActual.Id = contadorDocumentos;
+        documentos.Add(documentoActual);
+        documentoActual = new Documento(); // Crea una nueva instancia para limpiar el formulario
+        contadorDocumentos = contadorDocumentos + 1;                                       //    StateHasChanged(); // Forzar la actualización de la interfaz
+
+        //}
+    }
+
+
+    private bool ValidarDocumento()
+    {
+        bool bandera = true;
+
+
+        if (documentoActual.TipoDocumento <= 0)
+        {
+    MostrarNotificacion("Debe seleccionar un tipo de documento válido.");
+    bandera = false;
+    return bandera;
+        }
+
+
+
+        if (string.IsNullOrWhiteSpace(documentoActual.Nombre))
+        {
+    MostrarNotificacion("El nombre del documento es obligatorio.");
+    bandera = false;
+    return bandera;
+        }
+
+
+
+        if (documentoActual.Contenido == null || documentoActual.Contenido.Length == 0)
+        {
+    MostrarNotificacion("Debe adjuntar un archivo.");
+    bandera = false;
+    return bandera;
+        }
+
+
+
+        return bandera; // Retorna `true` si todas las validaciones pasaron
+    }
+
+
+
+    private async Task CargarDocumentos()
+    {
+
+        try
+        {
+            var documentoss = await Http.GetFromJsonAsync<List<Documento>>(
+                $"api/documento/obtenerDocumentosPorIdPersona?IdPersona={nuevoBien.Id}");
+
+            if (documentoss != null)
+            {
+                documentos = documentoss;
+            }
+            else
+            {
+                Console.WriteLine("No se encontraron documentos para el estudiante.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar documentos: {ex.Message}");
+        }
+    }
+
+
+    private void LimpiarDocumento()
+    {
+        documentoActual = new Documento(); // Crea una nueva instancia para limpiar el Documentos
+        StateHasChanged(); // Forzar la actualización de la interfaz
+    }
+
+
+    private void ValidarMonto(Presupuesto presupuesto)
+    {
+        if (presupuesto.ADisponer > presupuesto.Msalfi)
+        {
+            // Restaurar el valor máximo permitido
+            presupuesto.ADisponer = presupuesto.Msalfi;
+
+            // Mostrar alerta en la consola (puedes cambiar esto por una notificación en UI)
+            // MostrarNotificacion($"El monto ingresado en 'A Disponer' supera el disponible (₡ {presupuesto.Msalfi:N2}). Se ha ajustado.");
+            //MostrarNotificacion("El monto ingresado en 'A Disponer' supera el disponible, se ajustará automáticamente.");
+        }
+
+        StateHasChanged(); // Actualizar la UI
+    }
+
+
+    // Método que se ejecuta cuando cambia la selección de "Partida Específica"
+    private void OnPartidaEspecificaChanged(bool partidaEspecifica)
+    {
+        try
+        {
+            // Si se selecciona "Sí", mostrar la notificación
+            if (partidaEspecifica)
+            {
+                MostrarNotificacion("Se ha seleccionado una partida específica.");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Manejo de excepciones
+            MostrarNotificacion($"Error al mostrar la notificación: {ex.Message}");
+        }
+    }
+
+    /* private void MostrarPopover(Producto producto)
+          {
+          // Llamar a JavaScript para mostrar el popover
+          producto.AplicaPresupuesto = false;
+          var popoverId = GetPopoverId(producto);
+          JS.InvokeVoidAsync("bootstrapPopoverShow", popoverId);
+      }*/
+
+
+    private async Task MostrarPopoverTipoPresupuesto(Producto producto)
+    {
+        productoSeleccionado = producto; // Guardar referencia del producto actual
+
+        producto.AplicaPresupuesto = true;
+
+        productoSeleccionado.Justificacion = "";
+
+        var tiposPresupuesto = Enum.GetValues(typeof(EnumExtensions.TipoPresupuesto))
+    .Cast<EnumExtensions.TipoPresupuesto>()
+    .Select(tipo => new
+    {
+        value = (int)tipo,  // 🔹 Ahora `value` es un número
+        text = EnumExtensions.GetDescription(tipo)
+    })
+    .ToList();
+        // Llamar a JavaScript pasando la instancia del componente
+        var popoverId = GetPopoverId(producto);
+        await JS.InvokeVoidAsync("bootstrapPopoverShowTipoPresupuesto", popoverId, DotNetObjectReference.Create(this), tiposPresupuesto);
+    }
+
+
+
+
+    private async Task MostrarPopover(Producto producto)
+    {
+        productoSeleccionado = producto; // Guardar referencia del producto actual
+
+        // Cambiar el valor antes de abrir el popover
+        producto.AplicaPresupuesto = false;
+        productoSeleccionado.TipoPresupuesto = 0;
+
+        // Llamar a JavaScript pasando la instancia del componente
+        var popoverId = GetPopoverId(producto);
+        await JS.InvokeVoidAsync("bootstrapPopoverShow", popoverId, DotNetObjectReference.Create(this));
+    }
+
+    [JSInvokable]
+    public async Task ActualizarJustificacion(string justificacion)
+    {
+
+        if (string.IsNullOrWhiteSpace(justificacion))
+        {
+            MostrarNotificacion("La justificación no puede estar vacía.");
+            return;
+        }
+
+        productoSeleccionado.Justificacion = justificacion;
+        // Aquí puedes hacer lo que necesites con el comentario, por ejemplo, guardarlo en la BD
+        MostrarNotificacion($"Justificación recibido: {justificacion}");
+
+        // Simulación de actualización de la BD
+        await Task.Delay(500);
+        // Cerrar el popover llamando al método JS
+        await JS.InvokeVoidAsync("bootstrapPopoverHide", "popover-" + productoSeleccionado.Prod_id);
+
+        MostrarNotificacion("Comentario actualizado correctamente.");
+        StateHasChanged();
+
+    }
+
+
+    [JSInvokable]
+    public async Task ActualizarTipoPresupuesto(int tipoPresupuestoSeleccionado)
+    {
+
+        if (tipoPresupuestoSeleccionado <= 0)
+        {
+            MostrarNotificacion("Es necesario indicar el tipo de presupusto.!");
+            return;
+        }
+
+
+        if (productoSeleccionado == null)
+        {
+            MostrarNotificacion("Producto no seleccionado.");
+            return;
+        }
+
+        productoSeleccionado.TipoPresupuesto = tipoPresupuestoSeleccionado;
+
+
+        // Aquí puedes hacer lo que necesites con el comentario, por ejemplo, guardarlo en la BD
+
+        // Simulación de actualización de la BD
+        await Task.Delay(500);
+        // Cerrar el popover llamando al método JS
+        await JS.InvokeVoidAsync("bootstrapPopoverHide", "popover-" + productoSeleccionado.Prod_id);
+
+        MostrarNotificacion("Tipo de presupuesto actualizado correctamente.");
+        StateHasChanged();
+
+    }
+
+
+
+
+    private void CalcularSubtotal(Producto producto)
+    {
+        producto.Subtotal = producto.Cantidad * producto.MontoUnitario;
+    }
+
+
+
+    private void ActualizarJustificacion(Producto producto)
+    {
+        // Lógica para guardar la justificación cuando el usuario actualiza
+    }
+
+
+    private async Task EliminarPresupuesto(Presupuesto presupuesto)
+    {
+        try
+        {
+            // Mostrar confirmación al usuario antes de eliminar
+            bool confirm = await JS.InvokeAsync<bool>("confirm", "¿Estás seguro de que deseas eliminar la cuenta?");
+
+            if (confirm)
+            {
+                presupuestos.Remove(presupuesto);
+                presupuestosFiltrados.Remove(presupuesto);
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al eliminar el presupuesto: {ex.Message}");
+        }
+    }
+
+
+    private async Task ConfirmarEliminarDoc(int id)
+    {
+
+        // Mostrar confirmación al usuario antes de eliminar
+        bool confirm = await JS.InvokeAsync<bool>("confirm", "¿Estás seguro de que deseas eliminar este documento?");
+
+        if (confirm)
+        {
+
+            if (DesactivarActualizar == false)
+            {
+
+                // Eliminar el documento del estudiante por su ID
+                var response = await Http.DeleteAsync($"api/documento/eliminarDocumento?Id={id}");
+                if (response.IsSuccessStatusCode)
+                {
+
+                    await CargarDocumentos();
+                    //var documento = documentos.FirstOrDefault(d => d.Id == id);
+                    /// if (documento != null)
+                    /// {
+                    ///     documentos.Remove(documento);
+                    /// }
+                }
+            }
+            else
+            {
+                //Si es un estudiante nuevo completamente, se agregar a la lista en memoria
+                var documento = documentos.FirstOrDefault(d => d.Id == id);
+                if (documento != null)
+                {
+                    documentos.Remove(documento);
+                }
+            }
+
+        }
+    }
+
+
+    //    private Producto productoSeleccionado { get; set; }
+
+    /*    private void OnProductoSeleccionado(Producto productoSeleccionado)
+    {
+    if (productosSeleccionados == null || productosSeleccionados.Count == 0)
+    {
+    Console.WriteLine("⚠️ No hay productos en la lista.");
+    return;
+    }
+
+    if (productoSeleccionado == null)
+    {
+    Console.WriteLine("⚠️ Producto seleccionado es null.");
+    return;
+    }
+
+    // Asignamos el ID del producto seleccionado
+    productoSeleccionadoIdUser = productoSeleccionado.Prod_id;
+
+    // Desmarcamos todos los productos y marcamos solo el seleccionado
+    foreach (var prod in productosSeleccionados)
+    {
+    prod.Seleccionado = (prod.Prod_id == productoSeleccionadoIdUser);
+    }
+
+    // Forzar la actualización de la UI
+    StateHasChanged();
+
+    MostrarNotificacion($"✅ Producto seleccionado: {productoSeleccionado.Prod_nm}");
+    }*/
+
+
+    private void OnProductoSeleccionado(Producto producto)
+    {
+        try
+        {
+            if (producto == null) return;
+
+            // Verificar que la lista de productos seleccionados no sea null
+            if (productosSeleccionados != null)
+            {
+                // Desmarcar todos los productos y marcar solo el seleccionado
+                foreach (var p in productosSeleccionados)
+                {
+                    p.Seleccionado = (p.Prod_id == producto.Prod_id);
+                }
+            }
+
+            // Verificar que la lista de presupuestos no sea null antes de filtrarla
+            if (presupuestos != null)
+            {
+                // Filtrar los presupuestos asociados al producto seleccionado
+                presupuestosFiltrados = presupuestos
+                    .Where(p => p.IdBienServicio == producto.Prod_id)
+                    .ToList();
+            }
+            else
+            {
+                presupuestosFiltrados = new List<Presupuesto>(); // Evita el null
+            }
+
+            // Actualizar la UI
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion($"❌ Error en OnProductoSeleccionado: {ex.Message}");
+        }
+    }
+
+
+
+    private async Task GenerarPDF()
+    {
+        try
+        {
+
+
+            nuevoBien.Dependencia = dependencia;
+
+            // Validaciones previas para evitar enviar datos inválidos
+            if (nuevoBien == null || string.IsNullOrWhiteSpace(nuevoBien.DescripcionRequerimiento))
+            {
+                MostrarNotificacion("⚠️ El objeto 'NuevoBien' tiene datos incompletos.");
+                return;
+            }
+
+            if (productosSeleccionados == null || productosSeleccionados.Count == 0)
+            {
+                MostrarNotificacion("⚠️ No se seleccionaron productos.");
+                return;
+            }
+
+            if (presupuestos == null || presupuestos.Count == 0)
+            {
+                MostrarNotificacion("⚠️ No se proporcionaron presupuestos.");
+                return;
+            }
+
+            // Crear el request asegurando que no hay valores nulos
+            var request = new GenerarPDFRequest
+                {
+                    NuevoBien = nuevoBien,
+                    Productos = productosSeleccionados ?? new List<Producto>(),
+                    Presupuestos = presupuestos ?? new List<Presupuesto>()
+                };
+
+            // Serializar con opciones correctas
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var requestJson = JsonSerializer.Serialize(request, options);
+
+            // Mostrar el JSON antes de enviarlo
+            //  Console.WriteLine("JSON Enviado: " + requestJson);
+            //   MostrarNotificacion($"📝 JSON enviado: {requestJson}");
+
+            // Crear contenido para la solicitud
+            var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
+
+            // Realizar la solicitud HTTP
+            var response = await Http.PostAsync("api/solicitudbienservicio/generarpdf", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var pdfBytes = await response.Content.ReadAsByteArrayAsync();
+                var base64 = Convert.ToBase64String(pdfBytes);
+                var url = $"data:application/pdf;base64,{base64}";
+
+                // Descargar el PDF
+                await JS.InvokeVoidAsync("downloadFile", url, "SolicitudBienesServicios.pdf");
+
+                MostrarNotificacion("✅ PDF generado con éxito.");
+            }
+            else
+            {
+                var errorResponse = await response.Content.ReadAsStringAsync();
+                MostrarNotificacion($"❌ Error al generar el PDF: {errorResponse}");
+            }
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion($"❌ Error al generar el PDF: {ex.Message}");
+        }
+    }
+
+
+
+    //------------------------------
+    private async Task VerificarFirmaDigital()
+    {
+        try
+        {
+            // Simulación de conexión a la firma digital Gaudy
+            bool tarjetaConectada = await EsFirmaDigitalDisponible();
+
+            FirmaSolicitante = tarjetaConectada;
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion($"Error al verificar la firma digital: {ex.Message}");
+            FirmaSolicitante = false;
+        }
+    }
+
+    private Task<bool> EsFirmaDigitalDisponible()
+    {
+        // Aquí iría la lógica real para verificar si la tarjeta de firma digital Gaudy está conectada
+        // Se debe usar un API o un servicio local que interactúe con la firma digital
+        return Task.FromResult(true); // Simulación: devuelve "true" si la tarjeta está conectada
+    }
+
+
+
+
+    private string estadoConexion = "Desconocido";
+
+    private async Task VerificarConexion()
+    {
+        estadoConexion = await JS.InvokeAsync<string>("checkCardConnection");
+        MostrarNotificacion(estadoConexion);
+    }
+
+
+
+
+
+    private bool tarjetaConectada = false;
+    private string mensaje = string.Empty;
+
+
+    private async Task VerificarConexionTarjeta()
+    {
+        try
+        {
+            // Reemplaza la URL con el endpoint real de la API de GAUDI para verificar la conexión de la tarjeta
+            var response = await Http.GetAsync("https://api.gaudi.com/verificar-tarjeta");
+
+            if (response.IsSuccessStatusCode)
+            {
+                tarjetaConectada = await response.Content.ReadFromJsonAsync<bool>();
+                mensaje = tarjetaConectada ? "Tarjeta conectada correctamente." : "No se detectó ninguna tarjeta.";
+            }
+            else
+            {
+                mensaje = "Error al verificar la conexión de la tarjeta.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Excepción al verificar la tarjeta: {ex.Message}";
+        }
+    }
+
+    private async Task FirmarDocumento()
+    {
+        if (!tarjetaConectada)
+        {
+            mensaje = "Conecte la tarjeta antes de intentar firmar.";
+            return;
+        }
+
+        try
+        {
+            // Reemplaza la URL y el contenido con el endpoint real de la API de GAUDI para firmar documentos
+            var documento = new { Contenido = "Contenido del documento a firmar" };
+            var response = await Http.PostAsJsonAsync("https://api.gaudi.com/firmar-documento", documento);
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "Documento firmado exitosamente.";
+            }
+            else
+            {
+                mensaje = "Error al firmar el documento.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Excepción al firmar el documento: {ex.Message}";
+        }
+    }
+
+
+
+
+
+    // Método para obtener la meta seleccionada si es necesario
+    private Meta? ObtenerMetaSeleccionada()
+    {
+        return metas.FirstOrDefault(m => m.Codigo == nuevoBien.Meta);
+    }
+
+
+
+    private string estimacionTotalTexto = "";
+    private string presupuestoFormateado = "0.00";
+
+
+    // Método para actualizar el presupuesto cuando el usuario ingrese un nuevo valor
+    private void ActualizarPresupuesto(ChangeEventArgs e)
+    {
+        // Obtener el valor ingresado
+        string input = e.Value?.ToString() ?? "";
+
+        // Asegurarse de que solo se permita un punto y los números
+        int pointCount = input.Count(c => c == '.');
+        if (pointCount > 1)
+        {
+            input = input.Remove(input.LastIndexOf('.'));
+        }
+
+        // Remover caracteres no numéricos excepto el punto
+        input = new string(input.Where(c => char.IsDigit(c) || c == '.').ToArray());
+
+        // Verificar si el valor es numérico
+        if (decimal.TryParse(input, out decimal value))
+        {
+            // Formatear el número con separadores de miles y dos decimales
+            presupuestoFormateado = value.ToString("#,0.##");
+        }
+        else
+        {
+            // Si no es un número válido, mantener el texto ingresado
+            presupuestoFormateado = input;
+        }
+    }
+
+
+
+    private void HandleInput(ChangeEventArgs e)
+    {
+        // Obtener el valor ingresado
+        string input = e.Value?.ToString() ?? "";
+
+        // Asegurarse de que solo se permita un punto y los números
+        int pointCount = input.Count(c => c == '.');
+        if (pointCount > 1)
+        {
+            input = input.Remove(input.LastIndexOf('.'));
+        }
+
+        // Remover caracteres no numéricos excepto el punto
+        input = new string(input.Where(c => char.IsDigit(c) || c == '.').ToArray());
+
+        // Verificar si el valor es numérico
+        if (decimal.TryParse(input, out decimal value))
+        {
+            // Formatear el número con separadores de miles y dos decimales
+            estimacionTotalTexto = value.ToString("#,0.##");
+        }
+        else
+        {
+            // Si no es un número válido, mantener el texto ingresado
+            estimacionTotalTexto = input;
+        }
+    }
+
+
+
+    private async Task LimpiarFormulario()
+    {
+        // Limpiar los campos del formulario
+        nuevoBien = new SolicitudBienServicio();
+
+        nuevoBien.FechaEmision = DateTime.Now; // Establece la fecha actual
+
+        // Limpiar las listas de productos y presupuestos
+        productosSeleccionados.Clear();
+        presupuestosFiltrados.Clear();
+        documentos.Clear();
+        // Limpiar el presupuesto disponible
+        presupuestoFormateado = string.Empty;
+        estimacionTotalTexto = string.Empty;
+
+        // Limpiar las demás variables y estados
+        dependencia = null;
+        metas = null;
+        Cuentas = null;
+
+        // Si es necesario también puedes reiniciar el estado de las firmas o botones
+        FirmaSolicitante = false;
+        FirmaPresupuesto = false;
+        FirmaFinanciero = false;
+
+
+
+        DesactivarActualizar = true;
+        DesactivarAgregar = false;
+        CamposHabilitados = false;
+        desactivarAgregraCuenta = true;
+
+
+        await OnInitializedAsync();
+        // Opcionalmente, puedes agregar un mensaje de éxito o algo que indique que el formulario fue limpiado
+    }
+
+    private bool ValidarFormulario()
+    {
+        bool bandera = true;
+
+        if (nuevoBien.FechaEmision == default) {
+            MostrarNotificacion("La fecha de emisión es obligatoria.");
+            bandera = false;
+            return bandera;
+        }
+        if (string.IsNullOrWhiteSpace(nuevoBien.DescripcionRequerimiento)) {
+            MostrarNotificacion("La descripción general es obligatoria.");
+            bandera = false;
+            return bandera;
+        }
+
+        if (string.IsNullOrWhiteSpace(nuevoBien.FinalidadPerseguida)) {
+            MostrarNotificacion("Debe especificar la finalidad pública.");
+            bandera = false;
+            return bandera;
+        }
+
+        if (nuevoBien.EstimacionTotal <= 0)
+        {
+            MostrarNotificacion("La estimación total debe ser mayor a 0.");
+            bandera = false;
+            return bandera;
+        }
+
+        if (nuevoBien.PresupuestoDisponible <= 0)
+        {
+            MostrarNotificacion("El presupuesto total debe ser mayor a 0.");
+            bandera = false;
+            return bandera;
+        }
+
+
+
+        if (nuevoBien.RecursosInfraestructura == null || nuevoBien.RecursosInfraestructura == ""){
+            MostrarNotificacion("Debe asignar al menos un recurso humano.");
+            bandera = false;
+            return bandera;
+        }
+
+        if (nuevoBien.EncargadosInspeccion == null || string.IsNullOrWhiteSpace(nuevoBien.EncargadosInspeccion)){
+            MostrarNotificacion("Debe seleccionar un fiscalizador válido.");
+            bandera = false;
+            return bandera;
+        }
+
+        if (documentos == null || documentos.Count == 0){
+            MostrarNotificacion("Debe adjuntar al menos un documento.");
+            bandera = false;
+            return bandera;
+
+        }
+
+
+        if (productosSeleccionados == null || productosSeleccionados.Count == 0)
+        {
+            MostrarNotificacion("Debe agregar al menos un producto o servicio.");
+            bandera = false;
+            return bandera;
+
+        }
+        else
+        {
+            // Validar que cada producto tenga una cuenta de presupuesto asociada
+            // Validar productos
+            foreach (var producto in productosSeleccionados)
+            {
+                // Validar cantidad
+                if (producto.Cantidad <= 0)
+                {
+                    MostrarNotificacion("La cantidad del producto " + producto.Prod_nm + " debe ser mayor a 0.");
+                    bandera = false;
+                    return bandera;
+                }
+
+                // Validar monto unitario
+                if (producto.MontoUnitario <= 0)
+                {
+                    MostrarNotificacion("El monto unitario del producto " + producto.Prod_nm + " debe ser mayor a 0.");
+                    bandera = false;
+                    return bandera;
+
+                }
+
+                // Validar que cada producto tenga una cuenta de presupuesto asociada
+                bool tienePresupuestoAsignado = presupuestos.Any(p => p.IdBienServicio == producto.Prod_id);
+
+                if (!tienePresupuestoAsignado)
+                {
+                    MostrarNotificacion("El producto " + producto.Prod_nm + " no tiene una cuenta de presupuesto asignada.");
+                    bandera = false;
+                    return bandera;
+
+                }
+            }
+
+
+            // Validar presupuestos
+            foreach (var presupuesto in presupuestosFiltrados)
+            {
+                if (presupuesto.ADisponer <= 0)
+                {
+                    string cuenta = presupuesto.C2cta + "-" + presupuesto.C3cta + "-" + presupuesto.C4cta + "-" + presupuesto.C5cta + "-" + presupuesto.C6cta;
+                    MostrarNotificacion("El presupuesto con código " + cuenta  + " " + " tiene un valor de A Disponer menor o igual a 0.");
+                    bandera = false;
+                    return bandera;
+
+                }
+            }
+
+            bandera = true;
+            return  bandera;
+        }
+
+
+        bandera = true;
+        return bandera;
+
+    }
+
+
+    private bool bandera_rechazo = false;
+
+    // Método para cerrar el modal de rechazo
+    private async Task CerrarModalRechazo()
+    {
+        // Usar JSRuntime para cerrar el modal
+        JS.InvokeVoidAsync("eval", "$('#rechazoModal').modal('hide')");
+    }
+
+
+
+    // Método para manejar la acción de guardar en el modal
+    private async Task GuardarRechazo()
+    {
+        try
+        {
+            // Validar que las observaciones no estén vacías
+            if (string.IsNullOrEmpty(controlAprobaciones.Observaciones))
+            {
+                MostrarNotificacion("❌ Las observaciones no pueden estar vacías.");
+                return;
+            }
+
+          
+
+             if (bandera_rechazo == true){
+                // Se manda a registrar en controlAprobaciones y cambiar el estado del BS
+                await EnviarEstadoSolicitud((int)EnumExtensions.EstadoSolicitud.RechazadaProveeduria);
+                // Actualizar el estado del BienServicio
+                nuevoBien.Estado = (int)EnumExtensions.EstadoSolicitud.RechazadaProveeduria;
+
+            }else{
+                   // Se manda a registrar en controlAprobaciones y cambiar el estado del BS
+                await EnviarEstadoSolicitud((int)EnumExtensions.EstadoSolicitud.AnularProveeduria);
+                // Actualizar el estado del BienServicio
+                nuevoBien.Estado = (int)EnumExtensions.EstadoSolicitud.AnularProveeduria;
+            
+            }
+
+
+
+
+
+            // Desactivar botones después del rechazo
+            DesactivarAprobado = true;
+            DesactivarRechazado = true;
+
+            // Cerrar el modal después de completar la operación
+            CerrarModalRechazo();
+
+            // Notificación de éxito
+            MostrarNotificacion("✅ Solicitud rechazada correctamente.");
+        }
+        catch (Exception ex)
+        {
+            // Capturar errores y notificar al usuario
+            MostrarNotificacion($"❌ Error al rechazar la solicitud: {ex.Message}");
+        }
+    }
+
+
+
+
+    // Método para enviar estado a la API para Pre-Aprobar
+    private async Task PreAprobar()
+    {
+        try
+        {
+            // Mostrar confirmación al usuario antes de proceder
+            bool confirm = await JS.InvokeAsync<bool>("confirm", "¿Estás seguro de que deseas Aprobar esta solicitud?");
+
+            if (!confirm)
+            {
+                return; // Si el usuario cancela, se detiene la ejecución
+            }
+
+            // Enviar el estado actualizado a la API
+            await EnviarEstadoSolicitud((int)EnumExtensions.EstadoSolicitud.AprobadaProveeduria);
+
+            // Actualizar el estado del BienServicio
+            nuevoBien.Estado = (int)EnumExtensions.EstadoSolicitud.AprobadaProveeduria;
+
+            // Desactivar botones para evitar cambios posteriores
+            DesactivarAprobado = true;
+            DesactivarRechazado = true;
+
+            // Notificación de éxito
+            MostrarNotificacion("✅ Solicitud Aprobada con éxito.");
+        }
+        catch (Exception ex)
+        {
+            // Capturar errores y notificar al usuario
+            MostrarNotificacion($"❌ Error al Aprobar la solicitud: {ex.Message}");
+        }
+    }
+
+    // Método para enviar estado a la API para Pre-Rechazar
+    private async Task PreRechazar()
+    {
+        bool confirm = await JS.InvokeAsync<bool>("confirm", "¿Estás seguro de que deseas Rechazar esta solicitud?");
+
+        if (!confirm)
+        {
+            return;
+        }
+
+        bandera_rechazo = true;
+        // Usar JSRuntime para abrir el modal
+        await JS.InvokeVoidAsync("eval", "$('#rechazoModal').modal('show')");
+
+
+
+    }
+
+
+
+    // Método para enviar estado a la API para Pre-Rechazar
+    private async Task Anular()
+    {
+        bool confirm = await JS.InvokeAsync<bool>("confirm", "¿Estás seguro de que deseas Anular esta solicitud?");
+
+        if (!confirm)
+        {
+            return;
+        }
+
+        bandera_rechazo = false;
+        // Usar JSRuntime para abrir el modal
+        await JS.InvokeVoidAsync("eval", "$('#rechazoModal').modal('show')");
+
+    }
+
+
+
+    private async Task EnviarEstadoSolicitud(int estado)
+    {
+        var solicitud = new
+        {
+            IdSolicitudBS = nuevoBien.Id, // ID de la solicitud
+            FechaRegistro = DateTime.UtcNow,
+            Observaciones = controlAprobaciones.Observaciones,
+            UsuarioRegistro = UserStateService.UsuarioAutenticado.Cedula,
+            Departamento = nuevoBien.CodDependencia,
+            Estado = estado
+        };
+
+        // Declarar EmailRequest antes del condicional
+        object EmailRequest = new { Destinatario = "", Titulo = "", Cuerpo = "" };
+
+        if (estado == (int)EnumExtensions.EstadoSolicitud.RechazadaProveeduria)
+        {
+
+            EmailRequest = new
+            {
+                //Destinatario = nuevoBien.UsuarioRegistro,
+                Destinatario = $"{nuevoBien.UsuarioRegistro}, presupuesto@curridabat.go.cr", // Múltiples destinatarios separados por comas
+                Titulo = "Bienes y Servicios - Rechazada en Proveduría" + nuevoBien.NumeroConsecutivo + nuevoBien.NomDependencia,
+                Cuerpo = controlAprobaciones.Observaciones,
+
+            };
+
+
+
+    //Despues de q se sabe q se reclazo se determina a quien se notifica.
+    
+    
+    if (controlAprobaciones.DestinoRechazo == (int)EnumExtensions.DestinoRechazoProveeduria.Preproveduria)
+    {
+        solicitud = new
+        {
+            IdSolicitudBS = nuevoBien.Id, // ID de la solicitud
+            FechaRegistro = DateTime.UtcNow,
+            Observaciones = controlAprobaciones.Observaciones,
+            UsuarioRegistro = UserStateService.UsuarioAutenticado.Cedula,
+            Departamento = nuevoBien.CodDependencia,
+            Estado = (int)EnumExtensions.EstadoSolicitud.AprobadaFinanciero
+        };
+
+
+    }
+    else if(controlAprobaciones.DestinoRechazo == (int)EnumExtensions.DestinoRechazoProveeduria.PrePresupuesto)
+    {
+        solicitud = new
+        {
+            IdSolicitudBS = nuevoBien.Id, // ID de la solicitud
+            FechaRegistro = DateTime.UtcNow,
+            Observaciones = controlAprobaciones.Observaciones,
+            UsuarioRegistro = UserStateService.UsuarioAutenticado.Cedula,
+            Departamento = nuevoBien.CodDependencia,
+            Estado = (int)EnumExtensions.EstadoSolicitud.SolicitudFirmada
+        };
+
+
+    }
+    else if (controlAprobaciones.DestinoRechazo == (int)EnumExtensions.DestinoRechazoProveeduria.Presupuesto)
+
+    {
+        solicitud = new
+        {
+            IdSolicitudBS = nuevoBien.Id, // ID de la solicitud
+            FechaRegistro = DateTime.UtcNow,
+            Observaciones = controlAprobaciones.Observaciones,
+            UsuarioRegistro = UserStateService.UsuarioAutenticado.Cedula,
+            Departamento = nuevoBien.CodDependencia,
+            Estado = (int)EnumExtensions.EstadoSolicitud.PreAprobadoPresupuesto
+        };
+
+    }
+    else if (controlAprobaciones.DestinoRechazo == (int)EnumExtensions.DestinoRechazoProveeduria.Alcaldia)
+
+
+    {
+        solicitud = new
+        {
+            IdSolicitudBS = nuevoBien.Id, // ID de la solicitud
+            FechaRegistro = DateTime.UtcNow,
+            Observaciones = controlAprobaciones.Observaciones,
+            UsuarioRegistro = UserStateService.UsuarioAutenticado.Cedula,
+            Departamento = nuevoBien.CodDependencia,
+            Estado = (int)EnumExtensions.EstadoSolicitud.RevisionAlcaldia
+        };
+
+    }
+
+    else if (controlAprobaciones.DestinoRechazo == (int)EnumExtensions.DestinoRechazoProveeduria.Financiero)
+
+
+    {
+        solicitud = new
+        {
+            IdSolicitudBS = nuevoBien.Id, // ID de la solicitud
+            FechaRegistro = DateTime.UtcNow,
+            Observaciones = controlAprobaciones.Observaciones,
+            UsuarioRegistro = UserStateService.UsuarioAutenticado.Cedula,
+            Departamento = nuevoBien.CodDependencia,
+            Estado = (int)EnumExtensions.EstadoSolicitud.AprobadaPresupuesto
+        };
+
+    }
+
+
+    else if (controlAprobaciones.DestinoRechazo == (int)EnumExtensions.DestinoRechazoProveeduria.Solicitante)
+
+
+    {
+        solicitud = new
+        {
+            IdSolicitudBS = nuevoBien.Id, // ID de la solicitud
+            FechaRegistro = DateTime.UtcNow,
+            Observaciones = controlAprobaciones.Observaciones,
+            UsuarioRegistro = UserStateService.UsuarioAutenticado.Cedula,
+            Departamento = nuevoBien.CodDependencia,
+            Estado = (int)EnumExtensions.EstadoSolicitud.PendienteModificacion
+        };
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        }
+        else if (estado == (int)EnumExtensions.EstadoSolicitud.AprobadaProveeduria)
+        {
+
+            EmailRequest = new
+            {
+                Destinatario = nuevoBien.UsuarioRegistro,
+                Titulo = "Bienes y Servicios - Aprobada por Proveduría" + nuevoBien.NumeroConsecutivo + nuevoBien.NomDependencia,
+                Cuerpo = "Se ha realizado la Aprobación de la Bienes y Servicios número: " + nuevoBien.NumeroConsecutivo + "," + "La misma se remite para su respectiva revisión ",
+
+            };
+
+        }
+        else if (estado == (int)EnumExtensions.EstadoSolicitud.AnularProveeduria)
+        
+        {
+            EmailRequest = new
+            {
+                Destinatario = $"{nuevoBien.UsuarioRegistro}, presupuesto@curridabat.go.cr",
+                Titulo = "Bienes y Servicios - Anulada por la Dirección de Proveduría " + nuevoBien.NumeroConsecutivo + nuevoBien.NomDependencia,
+                Cuerpo = "Se ha realizado la anulación de la Bienes y Servicios número: " + nuevoBien.NumeroConsecutivo, 
+
+            };
+
+        
+        }
+        try
+        {
+            
+
+            // Enviar la solicitud de actualización de estado
+            var response = await Http.PostAsJsonAsync("api/ControlAprobaciones", solicitud);
+
+            // Leer respuesta del backend como string
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Intentar deserializar la respuesta para obtener el mensaje detallado
+                var result = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+                string mensajeBackend = result.TryGetProperty("Message", out var msg) ? msg.GetString() : "✅ Solicitud procesada con éxito.";
+                int idSolicitud = result.TryGetProperty("Aprobacion", out var aprobacion) ? aprobacion.GetProperty("IdSolicitudBS").GetInt32() : 0;
+
+         //       MostrarNotificacion($"{mensajeBackend} ID: {idSolicitud}");
+
+                /*** Si se registra en el control de aprobaciones exitosamente, se envía un correo electrónico ***/
+                var responseMail = await Http.PostAsJsonAsync("api/email/enviar", EmailRequest);
+
+                if (!responseMail.IsSuccessStatusCode)
+                {
+                    var errorMail = await responseMail.Content.ReadAsStringAsync();
+                    MostrarNotificacion($"❌ Error al enviar el correo: {errorMail}");
+                    return; // Detener ejecución si el correo no se envió correctamente
+                }
+                else
+                {
+                    MostrarNotificacion("📧 Se ha notificado exitosamente a través de un correo electrónico.");
+                }
+
+        await GuardarDocumentos(); // Guardar documentos si es necesario
+            }
+            else
+            {
+                // Manejo de error con el mensaje detallado del backend
+                MostrarNotificacion($"❌ Error al actualizar la solicitud: {responseContent}");
+            }
+
+
+        }
+        catch (Exception ex)
+        {
+            MostrarNotificacion($"❌ Error inesperado: {ex.Message}");
+        }
+    }
+
+
+
+        //Guardar documento en caso se que adjunte un documento durante e lrechazo o la aprobacion
+        private async Task GuardarDocumentos()
+        {
+            // Confirmar con el usuario
+
+            try
+            {
+    // Enviar la lista al backend
+    var response = await Http.PostAsJsonAsync("api/documento/guardarDocumentos", documentos);
+
+    if (response.IsSuccessStatusCode)
+    {
+        MostrarNotificacion("✅ Documentos guardados correctamente.");
+    }
+    else
+    {
+        var errorMessage = await response.Content.ReadAsStringAsync();
+        MostrarNotificacion($"❌ Error al guardar documentos: {errorMessage}");
+    }
+            }
+            catch (Exception ex)
+            {
+    MostrarNotificacion("❌ Error inesperado al guardar documentos: " + ex.Message);
+            }
+        }
+
+
+
+
+}

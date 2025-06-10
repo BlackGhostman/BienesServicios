@@ -1,0 +1,390 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+
+   
+    
+    <link rel="stylesheet" href="AppBS.styles.css" />
+    <link rel="icon" type="image/png" href="logo_curridabat.png" />
+
+    <link rel="stylesheet" href="css/app.css" />
+
+
+
+      <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="_content/Blazor.Bootstrap/blazor.bootstrap.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
+
+  
+    
+    <!-- jQuery y DataTables -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.5/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.5/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+
+    
+    <!-- Bootstrap JS (con Popper incluido) 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>-->
+
+
+
+
+   
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+
+
+
+    <title>AppBS</title>
+    <HeadOutlet @rendermode="InteractiveWebAssembly" />
+</head>
+
+<body>
+
+
+
+    <!--Seccion mensajes Toast para todas las patinas-->
+
+
+    <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" id="successToast">
+            <div class="toast-header">
+                <i class="bi bi-check-circle-fill me-2"></i> <!-- Icono de éxito -->
+                <strong class="me-auto">Notificación</strong>
+                <small>Ahora</small>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                Guardado exitosamente.
+            </div>
+        </div>
+    </div>
+
+
+
+<script>
+
+
+
+ 
+        
+
+ window.checkCardConnection = async function () {
+    try {
+        // Esto verifica si el navegador tiene acceso a un dispositivo de firma.
+        const cards = await navigator.credentials.get({ publicKey: {} });
+        if (cards) {
+            return "Conectado";
+        } else {
+            return "No conectado";
+        }
+    } catch (error) {
+        return "Error al verificar conexión";
+    }
+}
+
+
+
+
+
+
+
+
+
+
+        //-- SC para la desacrga de documentos adjuntos al BS//
+    window.blazorDownloadFile = (url, fileName) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    link.remove();
+    };
+
+
+    function downloadFile(url, fileName) {
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+    //Scritp Para la gestion de la tablas con DataTables filtros, paginacion, exportacion a excel y pdf
+        function initializeDataTable(tableId) {
+            $(document).ready(function () {
+                // Verifica si DataTable ya fue inicializado
+                if ($.fn.DataTable.isDataTable('#' + tableId)) {
+                    // Destruye la instancia existente
+                    $('#' + tableId).DataTable().destroy();
+                }
+
+                // Inicializa DataTable nuevamente
+                $('#' + tableId).DataTable({
+                    paging: true,
+                    searching: true,
+                    info: true,
+                    lengthChange: true,
+                    dom: 'Bfrtip', // Incluye la barra de botones
+                    buttons: [
+                        {
+                            extend: 'excelHtml5',
+                            text: 'Exportar a Excel',
+                            className: 'btn btn-success btn-sm'
+                        },
+                        {
+                            extend: 'pdfHtml5',
+                            text: 'Exportar a PDF',
+                            className: 'btn btn-danger btn-sm'
+                        }
+                    ],
+                    language: {
+                        search: "Buscar:",
+                        paginate: {
+                            next: "Siguiente",
+                            previous: "Anterior"
+                        },
+                        info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+                        zeroRecords: "No se encontraron resultados",
+                        lengthMenu: "Mostrar _MENU_ registros",
+                    }
+                });
+            });
+        }
+
+        function destroyDataTable(tableId) {
+            var table = $('#' + tableId).DataTable();
+            if (table) {
+                table.destroy(); // Destruye la tabla existente
+            }
+        }
+
+        //Funcion JS para cerra cualquier d¿modal
+
+        window.CerrarModal = function (modalId) {
+            const modalElement = document.getElementById(modalId);
+            if (modalElement) {
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide(); // Cierra el modal
+                }
+            }
+
+            // Elimina cualquier backdrop (fondo bloqueado) que quede activo
+            document.querySelectorAll(".modal-backdrop").forEach(el => el.remove());
+            document.body.classList.remove("modal-open"); // Elimina la clase que bloquea la pantalla
+            document.body.style.overflow = ""; // Restablece el scroll si estaba bloqueado
+        };
+
+
+
+
+        window.bootstrapPopoverShowTipoPresupuesto = (elementId, instance, tiposPresupuesto) => {
+            let element = document.getElementById(elementId);
+            if (element) {
+                let existingPopover = bootstrap.Popover.getInstance(element);
+                if (existingPopover) {
+                    existingPopover.dispose();
+                }
+
+                let content = document.createElement("div");
+                content.innerHTML = `
+                    <div style="width: 250px; padding: 10px;">
+                        <label for="tipoPresupuesto" class="form-label">Tipo Presupuesto:</label>
+                        <select id="tipoPresupuesto" class="form-select mb-2" required>
+                            <option value="0">Seleccione un Tipo Presupuesto</option>
+                            ${tiposPresupuesto.map(tipo => `
+                                <option value="${tipo.value}">${tipo.text}</option>
+                            `).join('')}
+                        </select>
+                        <button id="btnActualizarTipo" class="btn w-100" style="background-color: #004B87; color: white; border: none;">
+                            Actualizar
+                        </button>
+                    </div>
+                `;
+
+                let popover = new bootstrap.Popover(element, {
+                    trigger: 'manual',
+                    html: true,
+                    placement: 'bottom',
+                    title: "Atención",
+                    customClass: "custom-popover",
+                    content: () => content
+                });
+
+                popover.show();
+
+                setTimeout(() => {
+                    document.getElementById("btnActualizarTipo").addEventListener("click", () => {
+                        let tipoPresupuestoSeleccionado = document.getElementById("tipoPresupuesto").value.trim();
+                        let tipoPresupuestoInt = Number(tipoPresupuestoSeleccionado);
+
+                        console.log(`Seleccionado: ${tipoPresupuestoSeleccionado} -> ${tipoPresupuestoInt}`); // Verificar valor seleccionado
+
+                        // Si el valor es 0, se pasa a Blazor sin validación en JavaScript
+                        if (tipoPresupuestoInt === 0 || (isNaN(tipoPresupuestoInt) === false && Number.isInteger(tipoPresupuestoInt))) {
+                            instance.invokeMethodAsync("ActualizarTipoPresupuesto", tipoPresupuestoInt);
+                        } else {
+                            console.error("El valor seleccionado no es un número válido:", tipoPresupuestoSeleccionado);
+                        }
+                    });
+                }, 200);
+            }
+        };
+
+
+
+
+
+
+
+
+
+        //Para gestionar el popover  al seleciconar que no lleva presupusto  
+        window.bootstrapPopoverShow = (elementId, instance) => {
+            let element = document.getElementById(elementId);
+            if (element) {
+                // Verificar si ya hay un popover y destruirlo antes de crear uno nuevo
+                let existingPopover = bootstrap.Popover.getInstance(element);
+                if (existingPopover) {
+                    existingPopover.dispose();
+                }
+
+                // Crear nuevo contenido HTML
+                let content = document.createElement("div");
+                content.innerHTML = `
+                    <div style="width: 250px; padding: 10px;">
+                        <label for="inputComentario" class="form-label">Justificación:</label>
+                        <textarea id="inputComentario" class="form-control mb-2" rows="3" placeholder="Escriba su Justificación..."></textarea>
+                        <button id="btnActualizar" class="btn w-100" style="background-color: #004B87; color: white; border: none;">
+                            Actualizar
+                        </button>
+                    </div>
+                `;
+
+                // Inicializar el popover con el nuevo contenido dinámico
+                let popover = new bootstrap.Popover(element, {
+                    trigger: 'manual',
+                    html: true,
+                    placement: 'bottom',
+                    title: "Atención",
+                    customClass: "custom-popover",
+                    content: () => content // Usar la función para contenido dinámico
+                });
+
+                popover.show();
+
+                // Agregar evento al botón de actualizar para llamar a Blazor
+                setTimeout(() => {
+                    document.getElementById("btnActualizar").addEventListener("click", () => {
+                        let comentario = document.getElementById("inputComentario").value;
+                        instance.invokeMethodAsync("ActualizarJustificacion", comentario);
+                    });
+                }, 200);
+            }
+        };
+
+
+
+
+        /*window.bootstrapPopoverShow = (elementId) => {
+            let element = document.getElementById(elementId);
+            if (element) {
+                // Verificar si ya hay un popover y destruirlo antes de crear uno nuevo
+                let existingPopover = bootstrap.Popover.getInstance(element);
+                if (existingPopover) {
+                    existingPopover.dispose();
+                }
+
+                // Crear nuevo contenido HTML
+                let content = document.createElement("div");
+                content.innerHTML = `
+                    <div style="width: 250px; padding: 10px;">
+                        <label for="inputComentario" class="form-label">Comentario:</label>
+                        <textarea id="inputComentario" class="form-control mb-2" rows="3" placeholder="Escriba su comentario..."></textarea>
+                        <button id="btnActualizar" class="btn w-100" style="background-color: #004B87; color: white; border: none;">Actualizar</button>
+                    </div>
+                `;
+
+                // Inicializar el popover con el nuevo contenido dinámico
+                let popover = new bootstrap.Popover(element, {
+                    trigger: 'manual',
+                    html: true,
+                    placement: 'bottom',
+                    title: "Atención",
+                    customClass: "custom-popover",
+                    content: () => content // Usar la función para contenido dinámico
+                });
+
+                popover.show();
+            }
+        };*/
+
+
+
+
+        window.bootstrapPopoverHide = (id) => {
+            let popoverTrigger = document.getElementById(id);
+            if (popoverTrigger) {
+                let popover = bootstrap.Popover.getInstance(popoverTrigger);
+                if (popover) popover.hide();
+            }
+        };
+
+
+        window.tryDestroyDataTable = function (tableId) {
+            let table = $(`#${tableId}`);
+            if ($.fn.DataTable.isDataTable(table)) {
+                table.DataTable().destroy();
+            }
+        };
+
+
+    function buscarFicha() {
+        let ficha = document.getElementById("buscarFicha").value;
+        if (ficha) {
+            document.getElementById("fichaNumero").value = ficha;
+            let modal = bootstrap.Modal.getInstance(document.getElementById('buscarFichaModal'));
+            modal.hide();
+        } else {
+            alert("Ingrese un número de ficha válido.");
+        }
+    }
+</script>
+
+
+    <Routes @rendermode="InteractiveWebAssembly" />
+    <script src="_framework/blazor.web.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+</body>
+
+</html>
