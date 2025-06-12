@@ -1,111 +1,123 @@
 ﻿@using AppBS.Shared.services
 
-<div class="top-row ps-3 navbar navbar-dark"></div>
+<div class="sidebar">
+    <div class="sidebar-header">
+        <h3 class="sidebar-title">Sistema de Bienes y Servicios</h3>
+    </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+    <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <!-- Home -->
-        <div class="nav-item px-3" hidden="@(UserStateService.UsuarioAutenticado?.Rol == 1 && UserStateService.UsuarioAutenticado?.Rol != 2 && UserStateService.UsuarioAutenticado?.Rol != 3 && UserStateService.UsuarioAutenticado?.Rol != 9)">
-            <NavLink class="nav-link" href="home" Match="NavLinkMatch.All">
-                <i class="bi bi-house-door-fill me-2"></i>
-                <span>Inicio</span>
-            </NavLink>
-        </div>
+    <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+        <nav class="flex-column">
 
-        <!-- Lista BS Aprobar -->
-      
-        <!-- Administrar Solicitud de B.S -->
-        <div class="nav-item px-3" hidden="@(UserStateService.UsuarioAutenticado.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 2 && UserStateService.UsuarioAutenticado?.Rol != 3 && UserStateService.UsuarioAutenticado?.Rol != 4 && UserStateService.UsuarioAutenticado?.Rol != 5 && UserStateService.UsuarioAutenticado?.Rol != 6 && UserStateService.UsuarioAutenticado?.Rol != 7 && UserStateService.UsuarioAutenticado?.Rol != 8 && UserStateService.UsuarioAutenticado?.Rol != 9)">
-            <NavLink class="nav-link" href="solicitudbienesServicios">
-                <i class="bi bi-gear-fill me-2"></i>
-                <span>Solicitud de Bienes y Servicios</span>
-            </NavLink>
-        </div>
+            <!-- SECCIÓN PRINCIPAL -->
+            <div class="nav-group-title">Principal</div>
 
-        <!-- Listar Solicitud Iniciales Aprobración de Pre- Presupuesto -->
-        <div class="nav-item px-3" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 3)">
-            <NavLink class="nav-link" href="listprepresupuesto">
-                <i class="bi bi-list-ul me-2"></i>
-                <span>Pre-Aprobación Solicitudes</span>
-            </NavLink>
-        </div>
+            <!-- Home -->
+            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol == 1 && UserStateService.UsuarioAutenticado?.Rol != 2 && UserStateService.UsuarioAutenticado?.Rol != 3 && UserStateService.UsuarioAutenticado?.Rol != 9)">
+                <NavLink class="nav-link" href="home" Match="NavLinkMatch.All">
+                    <i class="bi bi-house-door-fill"></i>
+                    <span class="nav-text">Inicio</span>
+                </NavLink>
+            </div>
 
+            <!-- Administrar Solicitud de B.S -->
+            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 2 && UserStateService.UsuarioAutenticado?.Rol != 3 && UserStateService.UsuarioAutenticado?.Rol != 4 && UserStateService.UsuarioAutenticado?.Rol != 5 && UserStateService.UsuarioAutenticado?.Rol != 6 && UserStateService.UsuarioAutenticado?.Rol != 7 && UserStateService.UsuarioAutenticado?.Rol != 8 && UserStateService.UsuarioAutenticado?.Rol != 9)">
+                <NavLink class="nav-link" href="solicitudbienesServicios">
+                    <i class="bi bi-gear-fill"></i>
+                    <span class="nav-text">Solicitud de Bienes y Servicios</span>
+                </NavLink>
+            </div>
 
+            <div class="nav-separator"></div>
 
-        <!-- Listar Solicitud Pre-Aprobadas Presupueto -->
-        <div class="nav-item px-3" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 2)">
-            <NavLink class="nav-link" href="listaprobarpresupuesto">
-                <i class="bi bi-list-ul me-2"></i>
-                <span>Solicitudes Pre- Aprobadas</span>
-            </NavLink>
-        </div>
+            <!-- SECCIÓN APROBACIONES -->
+            <div class="nav-group-title">Aprobaciones</div>
 
-        <!-- Listar Solicitud Aprobadas Presupueto a Financiero -->
-        <div class="nav-item px-3" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 4)">
-            <NavLink class="nav-link" href="listaprobarfinanciero">
-                <i class="bi bi-list-ul me-2"></i>
-                <span>Solicitudes Pendientes F</span>
-            </NavLink>
-        </div>
+            <!-- Pre-Aprobación Solicitudes -->
+            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 3)">
+                <NavLink class="nav-link" href="listprepresupuesto">
+                    <i class="bi bi-list-check"></i>
+                    <span class="nav-text">Pre-Aprobación Solicitudes</span>
+                </NavLink>
+            </div>
 
+            <!-- Solicitudes Pre-Aprobadas -->
+            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 2)">
+                <NavLink class="nav-link" href="listaprobarpresupuesto">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span class="nav-text">Solicitudes Pre-Aprobadas</span>
+                </NavLink>
+            </div>
 
-        <!-- Listar Solicitud Aprobadas Financiero a preveduría - esta opción es para  -->
-        <div class="nav-item px-3" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 7 && UserStateService.UsuarioAutenticado?.Rol != 8)">
-            <NavLink class="nav-link" href="listpreproveeduria">
-                <i class="bi bi-list-ul me-2"></i>
-                <span> Pre-Aprobación Solicitudes</span>
-            </NavLink>
-        </div>
+            <!-- Solicitudes Pendientes Financiero -->
+            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 4)">
+                <NavLink class="nav-link" href="listaprobarfinanciero">
+                    <i class="bi bi-currency-dollar"></i>
+                    <span class="nav-text">Solicitudes Pendientes F</span>
+                </NavLink>
+            </div>
 
+            <!-- Pre-Aprobación Proveeduría -->
+            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 7 && UserStateService.UsuarioAutenticado?.Rol != 8)">
+                <NavLink class="nav-link" href="listpreproveeduria">
+                    <i class="bi bi-truck"></i>
+                    <span class="nav-text">Pre-Aprobación Proveeduría</span>
+                </NavLink>
+            </div>
 
+            <!-- Solicitudes Pre-Aprobadas Proveeduría -->
+            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 6)">
+                <NavLink class="nav-link" href="listaprobarproveduria">
+                    <i class="bi bi-check-square-fill"></i>
+                    <span class="nav-text">Solicitudes Pre-Aprobadas</span>
+                </NavLink>
+            </div>
 
-           <!-- Listar Solicitud Aprobadas Pre- Proveduria  a Direccion proveeduria  -->
-        <div class="nav-item px-3" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1  && UserStateService.UsuarioAutenticado?.Rol != 6)">
-            <NavLink class="nav-link" href="listaprobarproveduria">
-                <i class="bi bi-list-ul me-2"></i>
-                <span> Solicitudes Pre- Aprobadas</span>
-            </NavLink>
-        </div>
+            <!-- Solicitudes Enviadas Alcaldía -->
+            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 10)">
+                <NavLink class="nav-link" href="listaprobaralcaldia">
+                    <i class="bi bi-building"></i>
+                    <span class="nav-text">Solicitudes Enviadas Aprobación</span>
+                </NavLink>
+            </div>
 
+            <div class="nav-separator"></div>
 
+            <!-- SECCIÓN CONSULTAS -->
+            <div class="nav-group-title">Consultas</div>
 
-        <!-- Listar Solicitud enviadas alcaldia para aprobación  -->
-        <div class="nav-item px-3" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1  && UserStateService.UsuarioAutenticado?.Rol != 10)">
-            <NavLink class="nav-link" href="listaprobaralcaldia">
-                <i class="bi bi-list-ul me-2"></i>
-                <span> Solicitudes Enviadas Aprobación</span>
-            </NavLink>
-        </div>
+            <!-- Solicitudes Generadas -->
+            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol == 1 && UserStateService.UsuarioAutenticado?.Rol != 2 && UserStateService.UsuarioAutenticado?.Rol != 3 && UserStateService.UsuarioAutenticado?.Rol != 9)">
+                <NavLink class="nav-link" href="listbssolicitante">
+                    <i class="bi bi-file-text"></i>
+                    <span class="nav-text">Solicitudes Generadas</span>
+                </NavLink>
+            </div>
 
+            <div class="nav-separator"></div>
 
+            <!-- SECCIÓN ADMINISTRACIÓN -->
+            <div class="nav-group-title">Administración</div>
 
-        <!-- Listar Solicitud del solicitante  -->
-        <div class="nav-item px-3" hidden="@(UserStateService.UsuarioAutenticado?.Rol == 1 && UserStateService.UsuarioAutenticado?.Rol != 2 && UserStateService.UsuarioAutenticado?.Rol != 3 && UserStateService.UsuarioAutenticado?.Rol != 9)">
-            <NavLink class="nav-link" href="listbssolicitante">
-                <i class="bi bi-list-ul me-2"></i>
-                <span> Solicitudes Generadas</span>
-            </NavLink>
-        </div>
+            <!-- Reportes -->
+            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 9)">
+                <NavLink class="nav-link" href="servicioFA">
+                    <i class="bi bi-bar-chart-fill"></i>
+                    <span class="nav-text">Reportes</span>
+                </NavLink>
+            </div>
 
+            <!-- Dashboard -->
+            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 9)">
+                <NavLink class="nav-link" href="dashboard">
+                    <i class="bi bi-speedometer2"></i>
+                    <span class="nav-text">Dashboard</span>
+                </NavLink>
+            </div>
 
-        <!-- Reportes -->
-        <div class="nav-item px-3" hidden="@(UserStateService.UsuarioAutenticado.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 9)">
-            <NavLink class="nav-link" href="servicioFA">
-                <i class="bi bi-bar-chart-fill me-2"></i>
-                <span>Reportes</span>
-            </NavLink>
-        </div>
-
-        <!-- Dashboard -->
-        <div class="nav-item px-3" hidden="@(UserStateService.UsuarioAutenticado.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 9)">
-            <NavLink class="nav-link" href="dashboard">
-                <i class="bi bi-speedometer2 me-2"></i>
-                <span>Dashboard</span>
-            </NavLink>
-        </div>
-    </nav>
+        </nav>
+    </div>
 </div>
 
 @code {
@@ -113,12 +125,11 @@
 
     protected override void OnInitialized()
     {
-        UserStateService.OnChange += StateHasChanged; // Suscribirse a los cambios
+        UserStateService.OnChange += StateHasChanged;
     }
 
     public void Dispose()
     {
-        UserStateService.OnChange -= StateHasChanged; // Desuscribirse
+        UserStateService.OnChange -= StateHasChanged;
     }
 }
-    
