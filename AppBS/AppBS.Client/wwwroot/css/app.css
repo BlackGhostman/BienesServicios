@@ -28,6 +28,16 @@
 }
 
 
+/* Archivo: AppBS/AppBS.Client/wwwroot/css/app.css */
+
+.page-container {
+    display: flex;
+}
+
+.content {
+    flex-grow: 1; /* Esto hace que el área de contenido ocupe el resto del espacio */
+    padding: 2rem;
+}
 
 .select-metas {
     min-width: 250px; /* Ajusta el ancho mínimo según lo necesario */

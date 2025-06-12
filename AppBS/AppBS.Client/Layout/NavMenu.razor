@@ -1,127 +1,95 @@
 ﻿@using AppBS.Shared.services
+@inject NavigationManager NavigationManager
+@inject UserStateService UserStateService
 
-<div class="sidebar">
+<div class="@NavMenuCssClass" @onclick="CloseNavMenuOnLinkClick">
     <div class="sidebar-header">
-        <h3 class="sidebar-title">Sistema de Bienes y Servicios</h3>
+        @if (UserStateService.UsuarioAutenticado != null)
+        {
+            <div class="user-info-header">
+                <div class="user-avatar">
+                    <span>@GetInitials(UserStateService.UsuarioAutenticado.Correo)</span>
+                </div>
+                <div class="user-details">
+                    <span class="user-name">@UserStateService.UsuarioAutenticado.Correo</span>
+                    <span class="user-role">Rol: @UserStateService.UsuarioAutenticado.Rol</span>
+                </div>
+            </div>
+        }
     </div>
 
-    <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-    <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-        <nav class="flex-column">
-
-            <!-- SECCIÓN PRINCIPAL -->
+    <div class="nav-scrollable">
+        <nav class="flex-column" style="margin-left: 5px;">
+            @* ... Tu lista de NavLinks permanece aquí sin cambios ... *@
             <div class="nav-group-title">Principal</div>
-
-            <!-- Home -->
-            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol == 1 && UserStateService.UsuarioAutenticado?.Rol != 2 && UserStateService.UsuarioAutenticado?.Rol != 3 && UserStateService.UsuarioAutenticado?.Rol != 9)">
+            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol == 1)">
                 <NavLink class="nav-link" href="home" Match="NavLinkMatch.All">
                     <i class="bi bi-house-door-fill"></i>
                     <span class="nav-text">Inicio</span>
                 </NavLink>
             </div>
-
-            <!-- Administrar Solicitud de B.S -->
-            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 2 && UserStateService.UsuarioAutenticado?.Rol != 3 && UserStateService.UsuarioAutenticado?.Rol != 4 && UserStateService.UsuarioAutenticado?.Rol != 5 && UserStateService.UsuarioAutenticado?.Rol != 6 && UserStateService.UsuarioAutenticado?.Rol != 7 && UserStateService.UsuarioAutenticado?.Rol != 8 && UserStateService.UsuarioAutenticado?.Rol != 9)">
+            <div class="nav-item">
                 <NavLink class="nav-link" href="solicitudbienesServicios">
-                    <i class="bi bi-gear-fill"></i>
-                    <span class="nav-text">Solicitud de Bienes y Servicios</span>
+                    <i class="bi bi-file-earmark-plus-fill"></i>
+                    <span class="nav-text">Nueva Solicitud</span>
                 </NavLink>
             </div>
 
-            <div class="nav-separator"></div>
-
-            <!-- SECCIÓN APROBACIONES -->
-            <div class="nav-group-title">Aprobaciones</div>
-
-            <!-- Pre-Aprobación Solicitudes -->
-            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 3)">
-                <NavLink class="nav-link" href="listprepresupuesto">
-                    <i class="bi bi-list-check"></i>
-                    <span class="nav-text">Pre-Aprobación Solicitudes</span>
-                </NavLink>
-            </div>
-
-            <!-- Solicitudes Pre-Aprobadas -->
-            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 2)">
-                <NavLink class="nav-link" href="listaprobarpresupuesto">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span class="nav-text">Solicitudes Pre-Aprobadas</span>
-                </NavLink>
-            </div>
-
-            <!-- Solicitudes Pendientes Financiero -->
-            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 4)">
-                <NavLink class="nav-link" href="listaprobarfinanciero">
-                    <i class="bi bi-currency-dollar"></i>
-                    <span class="nav-text">Solicitudes Pendientes F</span>
-                </NavLink>
-            </div>
-
-            <!-- Pre-Aprobación Proveeduría -->
-            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 7 && UserStateService.UsuarioAutenticado?.Rol != 8)">
-                <NavLink class="nav-link" href="listpreproveeduria">
-                    <i class="bi bi-truck"></i>
-                    <span class="nav-text">Pre-Aprobación Proveeduría</span>
-                </NavLink>
-            </div>
-
-            <!-- Solicitudes Pre-Aprobadas Proveeduría -->
-            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 6)">
-                <NavLink class="nav-link" href="listaprobarproveduria">
-                    <i class="bi bi-check-square-fill"></i>
-                    <span class="nav-text">Solicitudes Pre-Aprobadas</span>
-                </NavLink>
-            </div>
-
-            <!-- Solicitudes Enviadas Alcaldía -->
-            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 10)">
-                <NavLink class="nav-link" href="listaprobaralcaldia">
-                    <i class="bi bi-building"></i>
-                    <span class="nav-text">Solicitudes Enviadas Aprobación</span>
-                </NavLink>
-            </div>
-
-            <div class="nav-separator"></div>
-
-            <!-- SECCIÓN CONSULTAS -->
-            <div class="nav-group-title">Consultas</div>
-
-            <!-- Solicitudes Generadas -->
-            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado?.Rol == 1 && UserStateService.UsuarioAutenticado?.Rol != 2 && UserStateService.UsuarioAutenticado?.Rol != 3 && UserStateService.UsuarioAutenticado?.Rol != 9)">
+            <div class="nav-group-title">Mis Solicitudes</div>
+            <div class="nav-item">
                 <NavLink class="nav-link" href="listbssolicitante">
-                    <i class="bi bi-file-text"></i>
-                    <span class="nav-text">Solicitudes Generadas</span>
+                    <i class="bi bi-folder-fill"></i>
+                    <span class="nav-text">Consultar Solicitudes</span>
                 </NavLink>
             </div>
+
+            <div class="nav-separator" hidden="@(IsApprovalRole() == false)"></div>
+            <div class="nav-group-title" hidden="@(IsApprovalRole() == false)">Aprobaciones</div>
+            <div class="nav-item" hidden="@(ShouldHide(1, 3))"><NavLink class="nav-link" href="listprepresupuesto"><i class="bi bi-list-check"></i><span class="nav-text">Pre-Aprobación Jefatura</span></NavLink></div>
+            <div class="nav-item" hidden="@(ShouldHide(1, 2))"><NavLink class="nav-link" href="listaprobarpresupuesto"><i class="bi bi-check-circle-fill"></i><span class="nav-text">Aprobación Presupuesto</span></NavLink></div>
+            <div class="nav-item" hidden="@(ShouldHide(1, 4))"><NavLink class="nav-link" href="listaprobarfinanciero"><i class="bi bi-currency-dollar"></i><span class="nav-text">Aprobación Financiera</span></NavLink></div>
+            <div class="nav-item" hidden="@(ShouldHide(1, 7, 8))"><NavLink class="nav-link" href="listpreproveeduria"><i class="bi bi-truck"></i><span class="nav-text">Pre-Aprobación Proveeduría</span></NavLink></div>
+            <div class="nav-item" hidden="@(ShouldHide(1, 6))"><NavLink class="nav-link" href="listaprobarproveduria"><i class="bi bi-check-square-fill"></i><span class="nav-text">Aprobación Proveeduría</span></NavLink></div>
+            <div class="nav-item" hidden="@(ShouldHide(1, 10))"><NavLink class="nav-link" href="listaprobaralcaldia"><i class="bi bi-building"></i><span class="nav-text">Aprobación Alcaldía</span></NavLink></div>
+            <div class="nav-separator" hidden="@(ShouldHide(1, 9))"></div>
+            <div class="nav-group-title" hidden="@(ShouldHide(1, 9))">Administración</div>
+            <div class="nav-item" hidden="@(ShouldHide(1, 9))"><NavLink class="nav-link" href="servicioFA"><i class="bi bi-bar-chart-fill"></i><span class="nav-text">Reportes</span></NavLink></div>
+            <div class="nav-item" hidden="@(ShouldHide(1, 9))"><NavLink class="nav-link" href="dashboard"><i class="bi bi-speedometer2"></i><span class="nav-text">Dashboard</span></NavLink></div>
 
             <div class="nav-separator"></div>
-
-            <!-- SECCIÓN ADMINISTRACIÓN -->
-            <div class="nav-group-title">Administración</div>
-
-            <!-- Reportes -->
-            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 9)">
-                <NavLink class="nav-link" href="servicioFA">
-                    <i class="bi bi-bar-chart-fill"></i>
-                    <span class="nav-text">Reportes</span>
-                </NavLink>
+            <div class="nav-item">
+                <div class="nav-link logout-link" @onclick="Logout">
+                    <i class="bi bi-box-arrow-left"></i>
+                    <span class="nav-text">Cerrar Sesión</span>
+                </div>
             </div>
-
-            <!-- Dashboard -->
-            <div class="nav-item" hidden="@(UserStateService.UsuarioAutenticado.Rol != 1 && UserStateService.UsuarioAutenticado?.Rol != 9)">
-                <NavLink class="nav-link" href="dashboard">
-                    <i class="bi bi-speedometer2"></i>
-                    <span class="nav-text">Dashboard</span>
-                </NavLink>
-            </div>
-
         </nav>
     </div>
 </div>
 
+<div class="nav-overlay @(navMenuAbierto ? "show" : "")" @onclick="ToggleNavMenu"></div>
+
 @code {
-    [Inject] UserStateService UserStateService { get; set; }
+    private bool navMenuAbierto = false;
+    private string? NavMenuCssClass => navMenuAbierto ? "sidebar open" : "sidebar";
+
+    // Esta función es ahora pública para poder ser llamada desde MainLayout
+    [JSInvokable]
+    public void ToggleNavMenu()
+    {
+        navMenuAbierto = !navMenuAbierto;
+        StateHasChanged();
+    }
+
+    // Para que el menú se cierre al hacer clic en un enlace en móvil
+    private void CloseNavMenuOnLinkClick()
+    {
+        if (navMenuAbierto)
+        {
+            ToggleNavMenu();
+        }
+    }
+    // ... El resto de tu código C# (@oninitialized, dispose, etc) permanece igual ...
 
     protected override void OnInitialized()
     {
@@ -131,5 +99,34 @@
     public void Dispose()
     {
         UserStateService.OnChange -= StateHasChanged;
+    }
+
+    private bool ShouldHide(params int[] allowedRoles)
+    {
+        var userRole = UserStateService.UsuarioAutenticado?.Rol;
+        if (userRole == null) return true;
+        return !allowedRoles.Contains(userRole.Value);
+    }
+
+    private bool IsApprovalRole()
+    {
+        var userRole = UserStateService.UsuarioAutenticado?.Rol;
+        if (userRole == null) return false;
+        int[] approvalRoles = { 1, 2, 3, 4, 6, 7, 8, 10 };
+        return approvalRoles.Contains(userRole.Value);
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "??";
+        var parts = name.Split(new[] { '@' }, StringSplitOptions.RemoveEmptyEntries);
+        var initialPart = parts[0];
+        return initialPart.Length > 1 ? initialPart.Substring(0, 2).ToUpper() : initialPart.ToUpper();
+    }
+
+    private async Task Logout()
+    {
+        await UserStateService.Logout();
+        NavigationManager.NavigateTo("/login", forceLoad: true);
     }
 }

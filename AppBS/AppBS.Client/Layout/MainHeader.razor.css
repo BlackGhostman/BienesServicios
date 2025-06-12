@@ -1,0 +1,35 @@
+﻿/* Archivo: AppBS/AppBS.Client/Layout/MainHeader.razor.css */
+
+.main-header {
+    background-color: #F37F21;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 25px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+    .main-header h1 {
+        margin: 0;
+        font-size: 1.5em;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .main-header img {
+        height: 50px;
+    }
+
+.header-left, .header-right {
+    flex: 1;
+}
+
+.header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.header-center {
+    flex: 2;
+}

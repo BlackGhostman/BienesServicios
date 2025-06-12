@@ -37,7 +37,19 @@ namespace AppBS.Shared.services
         }
 
         private void NotifyStateChanged() => OnChange?.Invoke();
+
+
+        // Agrega este método DENTRO de la clase UserStateService
+
+        public Task Logout()
+        {
+            UsuarioAutenticado = null; // Limpia la información del usuario
+            NotifyStateChanged();      // Notifica a todos los componentes que el estado cambió
+            return Task.CompletedTask;
+        }
+
     }
+
 
 
 }
